@@ -7,17 +7,14 @@
 
     <div class="search-bar">
       <div class="search-container">
-        <div class="search-input-wrapper">
-          <input
-            type="text"
-            class="search-input"
-            placeholder="搜索企业名称、类型或电话..."
-            v-model.trim="query"
-            @input="onSearch"
-          />
-          <button class="search-clear" :class="{ show: query }" @click="clearSearch" title="清空搜索">&times;</button>
-        </div>
-        <button class="btn btn-primary" @click="showAddModal = true" style="white-space: nowrap">新增企业</button>
+        <a-input-search
+          allow-clear
+          placeholder="搜索企业名称、类型或电话..."
+          v-model="query"
+          @search="onSearch"
+          class="search-input"
+        />
+        <a-button type="primary" @click="showAddModal = true">新增企业</a-button>
       </div>
     </div>
 
@@ -27,7 +24,7 @@
 
     <div id="loading" v-show="loading" class="loading">正在加载数据...</div>
 
-    <div class="table-container">
+    <div class="table-container" v-if="!isMobile">
       <table class="company-table" id="companyTable">
         <thead>
           <tr>
@@ -40,11 +37,11 @@
         </thead>
         <tbody>
           <tr v-for="(company, i) in filteredCompanies" :key="company.id" @click="openDetail(company)">
-            <td>{{ company.name }}</td>
-            <td>{{ company.type || '未分类' }}</td>
-            <td>{{ company.phone || '-' }}</td>
-            <td><span class="status-badge" :class="statusClass(company.status)">{{ statusText(company.status) }}</span></td>
-            <td>
+            <td data-label="企业名称">{{ company.name }}</td>
+            <td data-label="类型">{{ company.type || '未分类' }}</td>
+            <td data-label="联系电话">{{ company.phone || '-' }}</td>
+            <td data-label="状态"><span class="status-badge" :class="statusClass(company.status)">{{ statusText(company.status) }}</span></td>
+            <td data-label="操作">
               <button class="btn btn-secondary" @click.stop="openDetail(company)">详情</button>
             </td>
           </tr>
@@ -52,86 +49,131 @@
       </table>
     </div>
 
-    <!-- 详细信息模态框 -->
-    <div class="modal" v-show="showDetail">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>{{ currentCompany?.name }}</h2>
-          <span class="close" @click="closeDetail">&times;</span>
-        </div>
-        <div class="modal-body">
-          <div class="detail-grid">
-            <div class="detail-item"><div class="detail-label">类型</div><div class="detail-value">{{ currentCompany?.type || '未分类' }}</div></div>
-            <div class="detail-item"><div class="detail-label">电话</div><div class="detail-value">{{ currentCompany?.phone || '-' }}</div></div>
-            <div class="detail-item"><div class="detail-label">地址</div><div class="detail-value">{{ currentCompany?.address || '-' }}</div></div>
-            <div class="detail-item"><div class="detail-label">行业</div><div class="detail-value">{{ currentCompany?.industry || '-' }}</div></div>
+    <!-- 移动端卡片列表（Arco）-->
+    <div class="cards-container" v-else>
+      <a-space direction="vertical" :size="12" style="width: 100%">
+        <a-card
+          v-for="(company, i) in filteredCompanies"
+          :key="company.id"
+          hoverable
+          @click="openDetail(company)"
+        >
+          <template #title>
+            <div class="card-title">{{ company.name }}</div>
+          </template>
+          <template #extra>
+            <a-tag :color="statusTagColor(company.status)">{{ statusText(company.status) }}</a-tag>
+          </template>
+          <div class="card-meta">
+            <div class="meta-item"><span class="meta-label">类型</span><span class="meta-value">{{ company.type || '未分类' }}</span></div>
+            <div class="meta-item">
+              <span class="meta-label">电话</span>
+              <a class="meta-value tel-link" :href="company.phone ? 'tel:' + company.phone : undefined">{{ company.phone || '-' }}</a>
+            </div>
           </div>
-
-          <div class="form-group">
-            <label class="form-label">拜访状态</label>
-            <select class="form-control" v-model.number="editStatus">
-              <option :value="1">未拜访</option>
-              <option :value="2">已拜访</option>
-              <option :value="3">已拒绝</option>
-              <option :value="4">已合作</option>
-              <option :value="5">已签单</option>
-            </select>
+          <div class="card-actions">
+            <a-button type="primary" size="small" @click.stop="openDetail(company)">详情</a-button>
           </div>
-
-          <div class="form-group">
-            <label class="form-label">回访记录</label>
-            <textarea class="form-control" v-model="editNotes" rows="4" placeholder="请输入回访记录..."></textarea>
-          </div>
-
-          <div style="text-align: right; margin-top: 30px">
-            <button class="btn btn-secondary" @click="closeDetail">取消</button>
-            <button class="btn btn-primary" @click="saveRecord">保存</button>
-          </div>
-        </div>
-      </div>
+        </a-card>
+      </a-space>
     </div>
 
-    <!-- 新增企业模态框 -->
-    <div class="modal" v-show="showAddModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>新增企业</h2>
-          <span class="close" @click="showAddModal=false">&times;</span>
-        </div>
-        <div class="modal-body">
-          <div class="form-group"><label class="form-label">企业名称 *</label><input type="text" class="form-control" v-model="addForm.name"/></div>
-          <div class="form-group"><label class="form-label">类型 *</label>
-            <select class="form-control" v-model="addForm.type">
-              <option value="成衣">成衣</option>
-              <option value="面料">面料</option>
-            </select></div>
-          <div class="form-group"><label class="form-label">联系电话 *</label><input type="text" class="form-control" v-model="addForm.phone"/></div>
-          <div class="form-group"><label class="form-label">地址</label><input type="text" class="form-control" v-model="addForm.address"/></div>
-          <div class="form-group"><label class="form-label">行业</label><input type="text" class="form-control" v-model="addForm.industry"/></div>
-          <div class="form-group"><label class="form-label">企业规模</label><input type="text" class="form-control" v-model="addForm.scale"/></div>
-          <div style="text-align: right; margin-top: 20px">
-            <button class="btn btn-secondary" @click="showAddModal=false">取消</button>
-            <button class="btn btn-primary" @click="addCompany">新增</button>
-          </div>
-        </div>
+    <!-- 移动端悬浮新增按钮 -->
+    <button class="fab-add" v-if="isMobile" @click="showAddModal = true" aria-label="新增企业">＋</button>
+
+    <!-- 详细信息抽屉（Arco） -->
+    <a-drawer
+      v-model:visible="showDetail"
+      placement="bottom"
+      :height="isMobile ? '85vh' : '70vh'"
+      :footer="false"
+      :title="currentCompany?.name || '企业详情'"
+    >
+      <div class="detail-grid">
+        <div class="detail-item"><div class="detail-label">类型</div><div class="detail-value">{{ currentCompany?.type || '未分类' }}</div></div>
+        <div class="detail-item"><div class="detail-label">电话</div><div class="detail-value">{{ currentCompany?.phone || '-' }}</div></div>
+        <div class="detail-item"><div class="detail-label">地址</div><div class="detail-value">{{ currentCompany?.address || '-' }}</div></div>
+        <div class="detail-item"><div class="detail-label">行业</div><div class="detail-value">{{ currentCompany?.industry || '-' }}</div></div>
       </div>
-    </div>
+      <a-space direction="vertical" :size="12" style="width: 100%">
+        <div>
+          <div class="form-label">拜访状态</div>
+          <a-select v-model="editStatus" placeholder="选择状态">
+            <a-option :value="1">未拜访</a-option>
+            <a-option :value="2">已拜访</a-option>
+            <a-option :value="3">已拒绝</a-option>
+            <a-option :value="4">已合作</a-option>
+            <a-option :value="5">已签单</a-option>
+          </a-select>
+        </div>
+        <div>
+          <div class="form-label">回访记录</div>
+          <a-textarea v-model="editNotes" :auto-size="{ minRows: 3, maxRows: 6 }" placeholder="请输入回访记录..." />
+        </div>
+        <div style="text-align: right; margin-top: 8px">
+          <a-button @click="closeDetail">取消</a-button>
+          <a-button type="primary" style="margin-left: 8px" @click="saveRecord">保存</a-button>
+        </div>
+      </a-space>
+    </a-drawer>
+
+    <!-- 新增企业抽屉（Arco） -->
+    <a-drawer
+      v-model:visible="showAddModal"
+      placement="bottom"
+      :height="isMobile ? '85vh' : '70vh'"
+      title="新增企业"
+      :footer="false"
+    >
+      <a-form layout="vertical" :model="addForm">
+        <a-form-item field="name" label="企业名称 *">
+          <a-input v-model="addForm.name" allow-clear placeholder="请输入企业名称" />
+        </a-form-item>
+        <a-form-item field="type" label="类型 *">
+          <a-select v-model="addForm.type" placeholder="请选择类型">
+            <a-option value="成衣">成衣</a-option>
+            <a-option value="面料">面料</a-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item field="phone" label="联系电话 *">
+          <a-input v-model="addForm.phone" allow-clear placeholder="请输入联系电话" />
+        </a-form-item>
+        <a-form-item field="address" label="地址">
+          <a-input v-model="addForm.address" allow-clear placeholder="可选" />
+        </a-form-item>
+        <a-form-item field="industry" label="行业">
+          <a-input v-model="addForm.industry" allow-clear placeholder="可选" />
+        </a-form-item>
+        <a-form-item field="scale" label="企业规模">
+          <a-input v-model="addForm.scale" allow-clear placeholder="可选" />
+        </a-form-item>
+        <div style="text-align: right">
+          <a-button @click="showAddModal=false">取消</a-button>
+          <a-button type="primary" style="margin-left: 8px" @click="addCompany">新增</a-button>
+        </div>
+      </a-form>
+    </a-drawer>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { fujianSwimCompanies } from './data/fujian_swim.js'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { companyData } from './data/fujian_swim.js'
+import { Message } from '@arco-design/web-vue'
 import { fetchCompanies, addCompanyApi, deleteCompanyApi, updateCompanyApi, API_BASE } from './api/client.js'
 
 const STORAGE_KEY = 'companiesData'
 const loading = ref(false)
 const query = ref('')
 const companies = ref([])
+const isMobile = ref(false)
+const onResize = () => { isMobile.value = window.innerWidth <= 768 }
 
 // 初始化数据：localStorage优先
 onMounted(() => {
   loading.value = true
+  onResize()
+  window.addEventListener('resize', onResize)
   ;(async () => {
     try {
       if (API_BASE) {
@@ -141,22 +183,26 @@ onMounted(() => {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
         } else {
           const saved = localStorage.getItem(STORAGE_KEY)
-          companies.value = saved ? JSON.parse(saved) : fujianSwimCompanies
+          companies.value = saved ? JSON.parse(saved) : companyData
           localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
         }
       } else {
         const saved = localStorage.getItem(STORAGE_KEY)
-        companies.value = saved ? JSON.parse(saved) : fujianSwimCompanies
+        companies.value = saved ? JSON.parse(saved) : companyData
         localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
       }
     } catch (e) {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      companies.value = saved ? JSON.parse(saved) : fujianSwimCompanies
+      // 接口请求失败：强制使用本地 companyData，并提示离线模式
+      companies.value = companyData
       localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
+      Message.warning('网络异常，已进入离线模式，数据来自本地')
     } finally {
       loading.value = false
     }
   })()
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', onResize)
 })
 
 const filteredCompanies = computed(() => {
@@ -183,6 +229,17 @@ function statusClass(s) {
     4: 'status-cooperating',
     5: 'status-signed'
   }[s] || 'status-unvisited'
+}
+
+// Arco Tag 颜色映射
+function statusTagColor(s) {
+  return {
+    1: 'gold',
+    2: 'arcoblue',
+    3: 'red',
+    4: 'green',
+    5: 'purple'
+  }[s] || 'gold'
 }
 
 // 详情与编辑
@@ -273,11 +330,7 @@ body { background: #f0f2f5; }
 .header h1 { font-size: 2rem; margin-bottom: 10px; font-weight: 300; }
 .search-bar { padding: 20px 30px; background: #f8f9fa; border-bottom: 1px solid #e9ecef; }
 .search-container { display: flex; gap: 15px; align-items: center; }
-.search-input-wrapper { position: relative; flex: 1; }
-.search-input { width: 100%; padding: 12px 45px 12px 20px; border: 2px solid #e9ecef; border-radius: 25px; font-size: 16px; outline: none; transition: all 0.3s ease; background: white; }
-.search-input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-.search-clear { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #6c757d; cursor: pointer; font-size: 18px; padding: 5px; border-radius: 50%; display: none; transition: all 0.3s ease; }
-.search-clear.show { display: block; }
+.search-input { flex: 1; }
 .table-container { overflow-x: auto; padding: 0 30px; }
 .company-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
 .company-table th { background: #f8f9fa; padding: 18px 20px; text-align: left; font-weight: 600; color: #495057; border-bottom: 2px solid #e9ecef; }
@@ -289,11 +342,7 @@ body { background: #f0f2f5; }
 .status-rejected { background: #fd79a8; color: white; }
 .status-cooperating { background: #00b894; color: white; }
 .status-signed { background: #6c5ce7; color: white; }
-.modal { position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(5px); display: flex; }
-.modal-content { background-color: white; margin: 5% auto; padding: 0; border-radius: 15px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.2); }
-.modal-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 15px 15px 0 0; position: relative; }
-.close { position: absolute; right: 20px; top: 20px; color: white; font-size: 28px; font-weight: bold; cursor: pointer; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
-.modal-body { padding: 30px; }
+/* 旧模态样式移除，改用 Arco Drawer */
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
 .detail-item { background: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 4px solid #667eea; }
 .form-group { margin-bottom: 20px; }
@@ -303,4 +352,42 @@ body { background: #f0f2f5; }
 .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
 .btn-secondary { background: #6c757d; color: white; }
 .loading { display: none; text-align: center; padding: 20px; color: #666; }
+
+/* 移动端适配（卡片视图 + 全屏模态 + 悬浮新增）*/
+@media (max-width: 768px) {
+  .container { max-width: none; margin: 0; border-radius: 0; box-shadow: none; }
+  .header { padding: 16px; }
+  .header h1 { font-size: 1.4rem; }
+  .header p { display: none; }
+  .search-bar { padding: 12px 16px; position: sticky; top: 0; z-index: 10; }
+  .search-container { flex-direction: column; gap: 8px; align-items: stretch; }
+  .search-input :deep(.arco-input) { font-size: 16px; }
+  .search-bar :deep(.arco-btn) { width: 100%; }
+  .search-results-info { padding: 0 16px; }
+
+  /* 卡片列表 */
+  .cards-container { padding: 0 16px 70px; }
+  /* 使用 Arco Card，移除旧卡片容器样式 */
+  .card-title { font-size: 16px; font-weight: 600; color: #212529; }
+  .card-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; color: #495057; }
+  .meta-item { display: flex; gap: 6px; align-items: center; }
+  .meta-label { font-weight: 600; color: #6c757d; }
+  .meta-value { color: #343a40; }
+  .tel-link { color: #0d6efd; text-decoration: none; }
+  .tel-link:active { opacity: 0.8; }
+  .card-actions { margin-top: 10px; display: flex; justify-content: flex-end; }
+  /* 移动端按钮使用 Arco Button 默认样式 */
+  .status-badge { min-width: auto; }
+
+  /* 悬浮新增按钮 */
+  .fab-add { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); width: 52px; height: 52px; border-radius: 50%; border: none; color: #fff; font-size: 24px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 20px rgba(102,126,234,0.35); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); z-index: 20; }
+
+  /* Drawer 内容滚动优化 */
+  :deep(.arco-drawer-body) { -webkit-overflow-scrolling: touch; }
+  .detail-grid { grid-template-columns: 1fr; gap: 12px; }
+}
+
+@media (max-width: 480px) {
+  .header h1 { font-size: 1.2rem; }
+}
 </style>
