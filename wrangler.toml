@@ -2,9 +2,13 @@ name = "crm-api-worker"
 main = "cloudflare-worker.js"
 compatibility_date = "2024-01-01"
 
-# KV命名空间绑定
 [[kv_namespaces]]
 binding = "CRM_KV"
-id = "9fe0d2ef976b41968adc3cd86d016956"  # 需要替换为实际的KV命名空间ID
-preview_id = "9fe0d2ef976b41968adc3cd86d016956"  # 预览环境的KV命名空间ID
+id = "9fe0d2ef976b41968adc3cd86d016956"
+preview_id = "9fe0d2ef976b41968adc3cd86d016956"
+
+[[kv_namespaces]]
+binding = "CHONGFENGYI_KV"
+id = "1db2bb83bd09406f9565761cfd2f1c65"
+preview_id = "1db2bb83bd09406f9565761cfd2f1c65"
 

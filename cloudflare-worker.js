@@ -22,6 +22,119 @@ export default {
     const path = url.pathname;
 
     try {
+      // ---------- Chongfengyi CRUD ----------
+      // 获取冲锋衣数据
+      if (request.method === 'GET' && path === '/api/chongfengyi/data') {
+        const data = await env.CHONGFENGYI_KV.get('chongfengyiData')
+        const body = data || JSON.stringify([])
+        return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // 导入/覆盖冲锋衣全部数据
+      if (request.method === 'POST' && path === '/api/chongfengyi/data') {
+        const requestData = await request.json()
+        if (!Array.isArray(requestData)) {
+          return new Response(JSON.stringify({ error: '数据格式错误，需要数组格式' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+        }
+        await env.CHONGFENGYI_KV.put('chongfengyiData', JSON.stringify(requestData))
+        return new Response(JSON.stringify({ success: true, message: '冲锋衣数据保存成功' }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // 更新单个冲锋衣企业
+      if (request.method === 'PUT' && path.startsWith('/api/chongfengyi/company/')) {
+        const companyId = path.split('/').pop()
+        const updateData = await request.json()
+        const existingData = await env.CHONGFENGYI_KV.get('chongfengyiData')
+        let companies = existingData ? JSON.parse(existingData) : []
+        const idx = companies.findIndex(c => String(c.id) === String(companyId))
+        if (idx !== -1) {
+          companies[idx] = { ...companies[idx], ...updateData }
+          await env.CHONGFENGYI_KV.put('chongfengyiData', JSON.stringify(companies))
+          return new Response(JSON.stringify({ success: true, data: companies[idx] }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+        }
+        return new Response(JSON.stringify({ error: '企业不存在' }), { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // 获取单个冲锋衣企业
+      if (request.method === 'GET' && path.startsWith('/api/chongfengyi/company/')) {
+        const companyId = path.split('/').pop()
+        const existingData = await env.CHONGFENGYI_KV.get('chongfengyiData')
+        let companies = existingData ? JSON.parse(existingData) : []
+        const company = companies.find(c => String(c.id) === String(companyId))
+        if (company) {
+          return new Response(JSON.stringify(company), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+        }
+        return new Response(JSON.stringify({ error: '企业不存在' }), { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // 删除冲锋衣企业
+      if (request.method === 'DELETE' && path.startsWith('/api/chongfengyi/company/')) {
+        const companyId = path.split('/').pop()
+        const existingData = await env.CHONGFENGYI_KV.get('chongfengyiData')
+        let companies = existingData ? JSON.parse(existingData) : []
+        const idx = companies.findIndex(c => String(c.id) === String(companyId))
+        if (idx !== -1) {
+          const deleted = companies.splice(idx, 1)[0]
+          await env.CHONGFENGYI_KV.put('chongfengyiData', JSON.stringify(companies))
+          return new Response(JSON.stringify({ success: true, data: deleted }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+        }
+        return new Response(JSON.stringify({ error: '企业不存在' }), { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // 添加冲锋衣企业
+      if (request.method === 'POST' && path === '/api/chongfengyi/company') {
+        const newCompany = await request.json()
+        const existingData = await env.CHONGFENGYI_KV.get('chongfengyiData')
+        let companies = existingData ? JSON.parse(existingData) : []
+        const maxId = companies.length > 0 ? Math.max(...companies.map(c => parseInt(c.id) || 0)) : 0
+        newCompany.id = String(maxId + 1)
+        companies.push(newCompany)
+        await env.CHONGFENGYI_KV.put('chongfengyiData', JSON.stringify(companies))
+        return new Response(JSON.stringify({ success: true, data: newCompany }), { status: 201, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // ---------- Visit Status (后端持久化) ----------
+      // 获取拜访状态对象 { [id]: status }
+      if (request.method === 'GET' && path === '/api/chongfengyi/visit/status') {
+        const vs = await env.CHONGFENGYI_KV.get('chongfengyiVisitStatus')
+        const body = vs || JSON.stringify({})
+        return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+      // 更新单个企业的拜访状态
+      if (request.method === 'PUT' && path === '/api/chongfengyi/visit/status') {
+        const payload = await request.json()
+        const { id, status } = payload || {}
+        if (!id) {
+          return new Response(JSON.stringify({ error: '缺少企业ID' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+        }
+        const vsRaw = await env.CHONGFENGYI_KV.get('chongfengyiVisitStatus')
+        let vs = vsRaw ? JSON.parse(vsRaw) : {}
+        vs[String(id)] = status || '未拜访'
+        await env.CHONGFENGYI_KV.put('chongfengyiVisitStatus', JSON.stringify(vs))
+        return new Response(JSON.stringify({ success: true, data: vs }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // ---------- Visit Logs (后端持久化) ----------
+      // 获取某企业的回访记录数组
+      if (request.method === 'GET' && path.startsWith('/api/chongfengyi/visit/logs/')) {
+        const companyId = path.split('/').pop()
+        const logsRaw = await env.CHONGFENGYI_KV.get('chongfengyiVisitLogs')
+        let logs = logsRaw ? JSON.parse(logsRaw) : {}
+        const items = Array.isArray(logs[companyId]) ? logs[companyId] : []
+        return new Response(JSON.stringify(items), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+      // 追加某企业的回访记录
+      if (request.method === 'POST' && path.startsWith('/api/chongfengyi/visit/logs/')) {
+        const companyId = path.split('/').pop()
+        const item = await request.json()
+        const logsRaw = await env.CHONGFENGYI_KV.get('chongfengyiVisitLogs')
+        let logs = logsRaw ? JSON.parse(logsRaw) : {}
+        const list = Array.isArray(logs[companyId]) ? logs[companyId] : []
+        list.unshift({ date: item?.date || new Date().toISOString(), note: item?.note || '' })
+        logs[companyId] = list
+        await env.CHONGFENGYI_KV.put('chongfengyiVisitLogs', JSON.stringify(logs))
+        return new Response(JSON.stringify({ success: true, data: list }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
       // 获取所有CRM数据
       if (request.method === 'GET' && path === '/api/crm/data') {
         const data = await env.CRM_KV.get('crmData');

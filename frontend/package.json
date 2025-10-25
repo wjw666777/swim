@@ -6,11 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:jackets": "node scripts/build_jackets_data.js --xlsx ./src/xlsx/jackets.xlsx --out ./src/data/jackets.js",
+    "import:jackets": "node scripts/import_jackets.js --api https://crm-api-worker.939338219.workers.dev"
   },
   "dependencies": {
     "@arco-design/web-vue": "^2.57.0",
-    "vue": "^3.5.22"
+    "vue": "^3.5.22",
+    "vue-router": "^4.5.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.5.0",

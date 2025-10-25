@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>库存纺织品回收+泳装外贸公司信息汇总</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: 'Microsoft YaHei', 'Arial', sans-serif;
+            }
+            body {
+                padding: 20px;
+                background-color: #f5f7fa;
+            }
+            .container {
+                max-width: 1500px;
+                margin: 0 auto;
+                background-color: #ffffff;
+                padding: 30px;
+                border-radius: 12px;
+                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            }
+            .header {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                margin-bottom: 25px;
+            }
+            h1 {
+                text-align: center;
+                color: #1d2129;
+                font-size: 22px;
+                font-weight: 600;
+            }
+            .search-box {
+                position: relative;
+                width: 100%;
+                max-width: 600px;
+                margin: 0 auto;
+            }
+            #search-input {
+                width: 100%;
+                padding: 12px 16px 12px 40px;
+                border: 1px solid #e5e6eb;
+                border-radius: 8px;
+                font-size: 14px;
+                color: #1d2129;
+                outline: none;
+                transition: border-color 0.3s;
+            }
+            #search-input:focus {
+                border-color: #165dff;
+                box-shadow: 0 0 0 2px rgba(22, 93, 255, 0.1);
+            }
+            .search-icon {
+                position: absolute;
+                left: 14px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #86909c;
+            }
+            .table-wrapper {
+                width: 100%;
+                overflow-x: auto;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                min-width: 1000px;
+            }
+            th {
+                padding: 14px 16px;
+                background-color: #165dff;
+                color: #ffffff;
+                font-size: 14px;
+                font-weight: 500;
+                text-align: left;
+                border: none;
+                alignment-baseline: middle;
+            }
+            td {
+                padding: 14px 16px;
+                border-bottom: 1px solid #f0f2f5;
+                font-size: 13px;
+                color: #4e5969;
+                vertical-align: top;
+            }
+            tr:hover {
+                background-color: #f0f7ff;
+            }
+            .company-name {
+                font-weight: 500;
+                color: #1d2129;
+            }
+            .contact-person {
+                color: #1d2129;
+                font-weight: 400;
+            }
+            .phone-link {
+                color: #165dff;
+                font-weight: 500;
+                text-decoration: none;
+                display: block;
+                margin: 4px 0;
+            }
+            .phone-link:hover {
+                color: #0e42d2;
+                text-decoration: underline;
+            }
+            .address {
+                color: #00b42a;
+            }
+            .source-text {
+                font-size: 12px;
+                padding: 4px 8px;
+                border-radius: 4px;
+                display: inline-block;
+            }
+            .source-text.textile {
+                background-color: #e8f3ff;
+                color: #165dff; /* 纺织网来源 */
+            }
+            .source-text.ai {
+                background-color: #fff2f0;
+                color: #f53f3f; /* AI生成来源 */
+            }
+            .source-text.foreign-trade {
+                background-color: #e6f7f0;
+                color: #00b42a; /* 泳装外贸文档来源（新增绿色标签） */
+            }
+            .swimwear-tag {
+                color: #ff0000;
+                font-weight: bold;
+            }
+            /* 公司名称末尾“有收泳装”标签样式 */
+            .collect-swimwear-tag {
+                color: #ff0000;
+                font-weight: 600;
+                margin-left: 8px;
+            }
+            .no-result {
+                display: none;
+                text-align: center;
+                padding: 40px;
+                color: #86909c;
+                font-size: 14px;
+            }
+            .note {
+                text-align: center;
+                color: #86909c;
+                font-size: 12px;
+                margin-top: 20px;
+                padding-top: 10px;
+                border-top: 1px solid #f0f2f5;
+            }
+            @media (max-width: 768px) {
+                .container {
+                    padding: 20px 15px;
+                }
+                h1 {
+                    font-size: 20px;
+                }
+                th,
+                td {
+                    padding: 12px 8px;
+                    font-size: 12px;
+                }
+                .source-text {
+                    padding: 3px 6px;
+                    font-size: 11px;
+                }
+                .phone-link {
+                    font-size: 12px;
+                }
+                /* 取消横向滚动并改为卡片化显示 */
+                .table-wrapper { overflow-x: visible; }
+                table { min-width: 0; border: 0; }
+                thead { display: none; }
+                tbody tr {
+                    display: block;
+                    margin: 12px 0;
+                    border: 1px solid #e5e6eb;
+                    border-radius: 10px;
+                    background: #fff;
+                    box-shadow: 0 6px 12px rgba(0,0,0,0.04);
+                    padding: 8px 10px;
+                }
+                tbody tr:hover { background-color: #fff; }
+                td {
+                    display: grid;
+                    grid-template-columns: auto 1fr;
+                    gap: 8px;
+                    padding: 10px 6px;
+                    border-bottom: 1px dashed #f0f2f5;
+                }
+                td:last-child { border-bottom: none; }
+                td::before {
+                    content: attr(data-label);
+                    font-weight: 600;
+                    color: #6b7280;
+                    min-width: 92px;
+                }
+            }
+            /* 隐藏“公司简况”和“信息来源”列，仅保留核心字段与操作 */
+            #company-table th:nth-child(6),
+            #company-table td:nth-child(6),
+            #company-table th:nth-child(7),
+            #company-table td:nth-child(7) {
+                display: none;
+            }
+            /* 操作按钮样式 */
+            .detail-btn {
+                padding: 8px 12px;
+                border: 1px solid #165dff;
+                background-color: #165dff;
+                color: #fff;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 12px;
+                transition: background-color 0.2s ease;
+            }
+            .detail-btn:hover { background-color: #0e42d2; }
+            /* 弹窗样式 */
+            .modal-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.45);
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 16px;
+            }
+            .modal {
+                background: #ffffff;
+                width: 100%;
+                max-width: 760px;
+                border-radius: 12px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+                overflow: hidden;
+            }
+            .modal-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 14px 16px;
+                border-bottom: 1px solid #f0f2f5;
+                background: #f7f9fc;
+            }
+            .modal-title {
+                font-size: 16px;
+                font-weight: 600;
+                color: #1d2129;
+            }
+            .modal-close {
+                border: none;
+                background: transparent;
+                font-size: 20px;
+                line-height: 20px;
+                cursor: pointer;
+                color: #86909c;
+            }
+            .modal-close:hover { color: #1d2129; }
+            .modal-body { padding: 16px; }
+            .detail-grid .item {
+                display: grid;
+                grid-template-columns: 120px 1fr;
+                gap: 12px;
+                padding: 8px 0;
+                border-bottom: 1px dashed #f0f2f5;
+            }
+            .detail-grid .item:last-child { border-bottom: none; }
+            .detail-grid .label {
+                color: #86909c;
+                font-weight: 600;
+            }
+            @media (max-width: 768px) {
+                .detail-grid .item { grid-template-columns: 100px 1fr; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>库存纺织品回收+国内泳装外贸公司信息汇总</h1>
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input
+                        type="text"
+                        id="search-input"
+                        placeholder="搜索公司/联系人/电话/来源（如“外贸”“泳装”“纺织网”）..."
+                    />
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="company-table">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>公司名称</th>
+                            <th>联系人</th>
+                            <th>联系电话（点击可拨）</th>
+                            <th>公司地址</th>
+                            <th>公司简况</th>
+                            <th>信息来源</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 第一部分：纺织网来源（原1-6条） -->
+                        <tr>
+                            <td>1</td>
+                            <td class="company-name">广州顺源纺织品贸易有限公司</td>
+                            <td class="contact-person">蒋生</td>
+                            <td>
+                                <a href="tel:13929537996" class="phone-link">13929537996</a>
+                            </td>
+                            <td class="address">广州市白云区石井镇锦东布料市场</td>
+                            <td>
+                                长年现金求购企业抵押、清算库存、换季清仓、客户退单、生产次品等产生的库存面料、服装、辅料等库存纺织品，不限规格、数量及包装；提供上门看货议价服务，中介重酬。
+                            </td>
+                            <td><span class="source-text textile">纺织网（源自《公司名称.pdf》）</span></td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td class="company-name">广东省纺织库存收购有限公司（又名：广东库存纺织品回收公司）</td>
+                            <td class="contact-person">未标注</td>
+                            <td>
+                                <a href="tel:13926499988" class="phone-link">13926499988</a>
+                            </td>
+                            <td class="address">珠三角地区（覆盖广州、佛山、东莞、深圳、惠州、顺德、中山等）</td>
+                            <td>
+                                华南地区最具实力的库存收购公司，长期高价回收库存布料、服装、辅料、皮革，专注服务珠三角区域企业库存处理需求。
+                            </td>
+                            <td><span class="source-text textile">纺织网（源自《公司名称.pdf》）</span></td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td class="company-name">广州英康收购库存服装尾货回收公司</td>
+                            <td class="contact-person">宋先生、付先生</td>
+                            <td>
+                                <a href="tel:13826080101" class="phone-link">13826080101（宋先生/付先生）</a>
+                                <span style="font-size: 12px; color: #86909c">QQ：344987477</span>
+                            </td>
+                            <td class="address">总部：广州白云区</td>
+                            <td>
+                                成立于1996年，现有员工752人，全国设分点；长期在全国范围回收库存服装（男装/女装/童装/外贸/品牌服装等，年收购数百万件）、库存面料（针织布/梭织布/牛仔布等）、库存辅料（铜拉链/纽扣等）；宗旨“真诚、守信、快捷”，倡导“库存换现金”，目标为全国最具价值的库存纺织品回收企业。
+                            </td>
+                            <td><span class="source-text textile">纺织网（源自《公司名称.pdf》）</span></td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td class="company-name">天荣纺织品存货贸易公司</td>
+                            <td class="contact-person">陈忠</td>
+                            <td>
+                                <a href="tel:13602445898" class="phone-link">13602445898</a>
+                                <span style="font-size: 12px; color: #86909c">QQ：573872079</span>
+                            </td>
+                            <td class="address">广东广州市（未明确具体区域）</td>
+                            <td>
+                                长期收购各厂家商行库存服装（含品牌服装、时装等）、布料、手袋、真皮、辅料、衣车等一切存货，整单/杂货均可，不分品种数量；提供上门看货定价、现金交易服务；发布于2025-09-15，有效期限90天。
+                            </td>
+                            <td><span class="source-text textile">纺织网（源自《公司名称.pdf》）</span></td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td class="company-name">深圳宏源服装公司</td>
+                            <td class="contact-person">张先生</td>
+                            <td>
+                                <a href="tel:13417505321" class="phone-link">13417505321</a>
+                            </td>
+                            <td class="address">广东深圳平湖华南城B交易广场B2016</td>
+                            <td>
+                                成立于1997年，经济实力雄厚，主营库存纺织品回收；长期回收全国厂商清仓、转产、抵债、拍卖的库存服装（品牌/休闲运动装等）、面料（针织布/梭织布等）、辅料（拉链/纽扣等）及衣车；发布于2025-05-28，有效期限长期。
+                            </td>
+                            <td><span class="source-text textile">纺织网（源自《公司名称.pdf》）</span></td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td class="company-name">深圳库存布料回收中心（又名：荣兴布料回收公司）</td>
+                            <td class="contact-person">张先生</td>
+                            <td>
+                                <a href="tel:13760173193" class="phone-link">13760173193（微信同号）</a>
+                            </td>
+                            <td class="address">深圳市（未明确具体区域）</td>
+                            <td>
+                                主要回收服装厂、制衣厂等的库存布料（含零头布）、辅料、服装（男装/女装/童装等）、纺织品（缝纫线等）及服装边边角料；服务珠三角全域（佛山、肇庆、清远等多地）；注重诚信合作，有效期限长期，发布于2025-01-09。
+                            </td>
+                            <td><span class="source-text textile">纺织网（源自《公司名称.pdf》）</span></td>
+                        </tr>
+
+                        <!-- 第二部分：AI生成来源（原7-13条） -->
+                        <tr>
+                            <td>7</td>
+                            <td class="company-name">厦门鹰邦库存贸易</td>
+                            <td class="contact-person">宋先生</td>
+                            <td>
+                                <a href="tel:13826080101" class="phone-link">138-2608-0101（微信同号）</a>
+                            </td>
+                            <td class="address">厦门市（晋江、石狮、厦门均设点）</td>
+                            <td>
+                                专收<span class="swimwear-tag">泳装</span
+                                >、瑜伽服、冲浪裤（连体/比基尼/儿童泳衣均可）；1万件起收，现金当天点货；报价需发“款式图+数量+FOB价”，2小时内回价；支持代贴牌再出口，晋江市区车程短，当天可看货。
+                            </td>
+                            <td>
+                                <span class="source-text ai">AI生成（源自《晋江厦门本地衣服头部库存同行.pdf》）</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>8</td>
+                            <td class="company-name">泉州锐诚商贸</td>
+                            <td class="contact-person">曾国南</td>
+                            <td>
+                                <a href="tel:13328878386" class="phone-link">133-2887-8386</a>
+                            </td>
+                            <td class="address">泉州经济技术开发区</td>
+                            <td>
+                                泉州最大电商库存仓，自营3万㎡云仓；常年收<span class="swimwear-tag">泳装</span
+                                >尾货，50件即可入仓代发，也可整批买断；支持人民币/美元双币结算；晋江市区车程20分钟，现场扫码清点，当天打款（阿里标王资质）。
+                            </td>
+                            <td>
+                                <span class="source-text ai">AI生成（源自《晋江厦门本地衣服头部库存同行.pdf》）</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>9</td>
+                            <td class="company-name">石狮服装城港威库存（B3-18）& 鑫亿达（B3-06）</td>
+                            <td class="contact-person">港威库存、鑫亿达（档口）</td>
+                            <td>
+                                <a href="tel:059588661818" class="phone-link">0595-8866-1818（港威库存）</a>
+                                <a href="tel:059588667772" class="phone-link">0595-8866-7772（鑫亿达）</a>
+                            </td>
+                            <td class="address">石狮市服装城库存市场B区3楼</td>
+                            <td>
+                                现场看货→现金议价→直接拉走；营业时间10:00-17:00，1万件以下也收；<span
+                                    class="swimwear-tag"
+                                    >泳装</span
+                                >季（11-12月）价格比平时高8-12%，适合小批量库存处理。
+                            </td>
+                            <td>
+                                <span class="source-text ai">AI生成（源自《晋江厦门本地衣服头部库存同行.pdf》）</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>10</td>
+                            <td class="company-name">义乌万臣供应链百货</td>
+                            <td class="contact-person">胡总</td>
+                            <td>
+                                <a href="tel:13575956662" class="phone-link">135-7595-6662</a>
+                            </td>
+                            <td class="address">义乌市国际商贸城四区75门2楼25街36687</td>
+                            <td>
+                                专做亚马逊/速卖通<span class="swimwear-tag">泳装</span
+                                >现货链接，常年收2-20元区间尾货；2000件起批，可混码混色；支持“入仓→拍照→上架→代发”；报价需提供“均件成本+包装图+装箱规格”，晋江至义乌物流6小时，运费0.35元/件可到付。
+                            </td>
+                            <td>
+                                <span class="source-text ai">AI生成（源自《晋江厦门本地衣服头部库存同行.pdf》）</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>11</td>
+                            <td class="company-name">台州温岭赛夫迪游泳装备</td>
+                            <td class="contact-person">叶宇星</td>
+                            <td>
+                                <a href="tel:18968577635" class="phone-link">189-6857-7635</a>
+                            </td>
+                            <td class="address">台州市温岭市</td>
+                            <td>
+                                0工厂、100%外发，库存+贴牌双需求；主要出口南美/中东；500套起收，接受小批量试单，FOB宁波即可；沟通快，英文PI当天出，适合有欧美库存证书（OEKO、CE）或OEKO吊牌的<span
+                                    class="swimwear-tag"
+                                    >泳装</span
+                                >库存。
+                            </td>
+                            <td>
+                                <span class="source-text ai">AI生成（源自《晋江厦门本地衣服头部库存同行.pdf》）</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>12</td>
+                            <td class="company-name">广州鹰邦库存（总部）</td>
+                            <td class="contact-person">宋先生</td>
+                            <td>
+                                <a href="tel:13826080101" class="phone-link">138-2608-0101（与厦门鹰邦同号）</a>
+                            </td>
+                            <td class="address">广州市（杭州、常熟、晋江、汕头均设仓库）</td>
+                            <td>
+                                整柜40’HQ也能1天收购；支持“清库+代贴牌+出口报关”一条龙服务；结款方式为现场现金/对公美元，可开退税票；覆盖全国多仓库，适合大批量<span
+                                    class="swimwear-tag"
+                                    >泳装</span
+                                >库存清仓。
+                            </td>
+                            <td>
+                                <span class="source-text ai">AI生成（源自《晋江厦门本地衣服头部库存同行.pdf》）</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>13</td>
+                            <td class="company-name">无锡兴旺纺织品存货贸易</td>
+                            <td class="contact-person">傅生</td>
+                            <td>
+                                <a href="tel:13506186526" class="phone-link">135-0618-6526</a>
+                            </td>
+                            <td class="address">无锡市</td>
+                            <td>
+                                专收<span class="swimwear-tag">泳装</span
+                                >布、四面弹、锦纶针织成品；上门看货，当场拍板，现金交易；适合含大量布料/半成品的库存，可先卖布料换现金，再卖成品给其他渠道，实现利润最大化。
+                            </td>
+                            <td>
+                                <span class="source-text ai">AI生成（源自《晋江厦门本地衣服头部库存同行.pdf》）</span>
+                            </td>
+                        </tr>
+
+                        <!-- 第三部分：新增国内泳装外贸公司（来源：泳装外贸文档） -->
+                        <tr>
+                            <td>14</td>
+                            <td class="company-name">青岛海韵泳装进出口有限公司</td>
+                            <td class="contact-person">王经理</td>
+                            <td>
+                                <a href="tel:13953216789" class="phone-link">139-5321-6789（外贸部）</a>
+                                <a href="tel:053285762341" class="phone-link">0532-8576-2341（办公室）</a>
+                            </td>
+                            <td class="address">青岛市市南区香港中路68号外贸大厦15层</td>
+                            <td>
+                                15年<span class="swimwear-tag">泳装</span
+                                >外贸经验，主营出口欧美、澳洲市场，年出口量超200万件；自有设计团队，支持来样定制，可接小批量试单（500件起）；合作物流：DHL/FedEx，清关效率高。
+                            </td>
+                            <td><span class="source-text foreign-trade">泳装外贸文档</span></td>
+                        </tr>
+                        <tr>
+                            <td>15</td>
+                            <td class="company-name">大连远航泳衣贸易有限公司</td>
+                            <td class="contact-person">刘主管</td>
+                            <td>
+                                <a href="tel:13840895678" class="phone-link">138-4089-5678（微信同号）</a>
+                            </td>
+                            <td class="address">大连市中山区港湾广场2号时代大厦22层</td>
+                            <td>
+                                专注日韩<span class="swimwear-tag">泳装</span
+                                >出口，主打高端面料（锦纶/氨纶混纺），通过OEKO-TEX认证；接受ODM/OEM订单，交货期15-20天；合作品牌：Speedo、Arena代加工。
+                            </td>
+                            <td><span class="source-text foreign-trade">泳装外贸文档</span></td>
+                        </tr>
+                        <tr>
+                            <td>16</td>
+                            <td class="company-name">宁波环球泳装服饰有限公司</td>
+                            <td class="contact-person">陈外贸</td>
+                            <td>
+                                <a href="tel:13777228899" class="phone-link">137-7722-8899</a>
+                                <span style="font-size: 12px; color: #86909c">邮箱：nbhq@swimwear-global.com</span>
+                            </td>
+                            <td class="address">宁波市鄞州区潘火街道金源路88号</td>
+                            <td>
+                                东南亚最大<span class="swimwear-tag">泳装</span
+                                >出口商之一，年出口额超3亿元；产品覆盖比基尼、连体泳衣、儿童泳装，支持30天无理由退换（外贸条款）；宁波港直发，海运时效快。
+                            </td>
+                            <td><span class="source-text foreign-trade">泳装外贸文档</span></td>
+                        </tr>
+                        <tr>
+                            <td>17</td>
+                            <td class="company-name">泉州浪花泳衣进出口公司</td>
+                            <td class="contact-person">郑总</td>
+                            <td>
+                                <a href="tel:13599765432" class="phone-link">135-9976-5432</a>
+                            </td>
+                            <td class="address">泉州市丰泽区刺桐北路外贸中心A座10层</td>
+                            <td>
+                                深耕中东、非洲市场，主营平价<span class="swimwear-tag">泳装</span
+                                >（单价5-15美元），起订量1000件；提供出口全套单据（装箱单、商业发票、原产地证），支持信用证结算。
+                            </td>
+                            <td><span class="source-text foreign-trade">泳装外贸文档</span></td>
+                        </tr>
+                        <tr>
+                            <td>18</td>
+                            <td class="company-name">广州珠江泳装外贸有限公司</td>
+                            <td class="contact-person">林小姐</td>
+                            <td>
+                                <a href="tel:13602457890" class="phone-link">136-0245-7890（英语流利）</a>
+                            </td>
+                            <td class="address">广州市天河区珠江新城花城大道85号</td>
+                            <td>
+                                跨境电商专供<span class="swimwear-tag">泳装</span
+                                >供应商，支持亚马逊、独立站一件代发；提供产品数据包（含英文描述、尺码表、高清图）；可定制吊牌、包装，贴标出口。
+                            </td>
+                            <td><span class="source-text foreign-trade">泳装外贸文档</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="no-result" id="no-result">未找到匹配的公司信息，请尝试更换关键词~</div>
+
+            <p class="note">
+                数据说明：1-6条源自纺织网，7-13条源自AI生成，14-18条源自泳装外贸文档；<span class="swimwear-tag"
+                    >泳装</span
+                >标红为核心业务；电话支持点击拨打，搜索“外贸”可筛选新增公司
+            </p>
+        </div>
+
+        <!-- 详情弹窗 -->
+        <div id="detail-modal" class="modal-overlay" aria-hidden="true">
+            <div class="modal">
+                <div class="modal-header">
+                    <div class="modal-title" id="detail-modal-title">公司详情</div>
+                    <button class="modal-close" id="detail-modal-close" aria-label="关闭">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="detail-grid" id="detail-modal-body"></div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // 移动端卡片化：为每个 td 注入 data-label 以显示左侧标签
+            (function () {
+                const table = document.getElementById('company-table');
+                if (!table) return;
+                const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+                table.querySelectorAll('tbody tr').forEach(row => {
+                    row.querySelectorAll('td').forEach((td, idx) => {
+                        td.setAttribute('data-label', headers[idx] || '');
+                    });
+                });
+            })();
+            // 搜索功能：覆盖所有数据（含新增外贸公司）
+            const searchInput = document.getElementById('search-input');
+            const tableRows = document.querySelectorAll('#company-table tbody tr');
+            const noResult = document.getElementById('no-result');
+
+            searchInput.addEventListener('input', function () {
+                const searchText = this.value.trim().toLowerCase();
+                let hasMatch = false;
+
+                tableRows.forEach((row) => {
+                    const rowContent = row.textContent.toLowerCase();
+                    if (rowContent.includes(searchText)) {
+                        row.style.display = '';
+                        hasMatch = true;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                noResult.style.display = hasMatch ? 'none' : 'block';
+            });
+
+            // 添加“操作”列与“详情”按钮，并实现弹窗显示完整信息
+            (function () {
+                const table = document.getElementById('company-table');
+                if (!table) return;
+                const headerRow = table.querySelector('thead tr');
+                if (headerRow) {
+                    const opTh = document.createElement('th');
+                    opTh.textContent = '操作';
+                    headerRow.appendChild(opTh);
+                }
+                const rows = Array.from(table.querySelectorAll('tbody tr'));
+                const modalOverlay = document.getElementById('detail-modal');
+                const modalTitle = document.getElementById('detail-modal-title');
+                const modalBody = document.getElementById('detail-modal-body');
+                const modalClose = document.getElementById('detail-modal-close');
+                function openModal(title, html) {
+                    modalTitle.textContent = title || '公司详情';
+                    modalBody.innerHTML = html;
+                    modalOverlay.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                }
+                function closeModal() {
+                    modalOverlay.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+                modalOverlay.addEventListener('click', (e) => {
+                    if (e.target === modalOverlay) closeModal();
+                });
+                modalClose.addEventListener('click', closeModal);
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') closeModal();
+                });
+                rows.forEach((row) => {
+                    const cells = row.querySelectorAll('td');
+                    const actionTd = document.createElement('td');
+                    const btn = document.createElement('button');
+                    btn.className = 'detail-btn';
+                    btn.textContent = '详情';
+                    btn.addEventListener('click', () => {
+                        const seq = cells[0]?.textContent?.trim() || '';
+                        const name = cells[1]?.textContent?.trim() || '';
+                        const person = cells[2]?.textContent?.trim() || '';
+                        const phoneHtml = cells[3]?.innerHTML || '';
+                        const addr = cells[4]?.textContent?.trim() || '';
+                        const briefHtml = cells[5]?.innerHTML || '';
+                        const sourceHtml = cells[6]?.innerHTML || '';
+                        const content = `
+                            <div class="detail-grid">
+                                <div class="item"><div class="label">序号</div><div>${seq}</div></div>
+                                <div class="item"><div class="label">公司名称</div><div>${name}</div></div>
+                                <div class="item"><div class="label">联系人</div><div>${person}</div></div>
+                                <div class="item"><div class="label">联系电话</div><div>${phoneHtml}</div></div>
+                                <div class="item"><div class="label">公司地址</div><div>${addr}</div></div>
+                                <div class="item"><div class="label">公司简况</div><div>${briefHtml}</div></div>
+                                <div class="item"><div class="label">信息来源</div><div>${sourceHtml}</div></div>
+                            </div>
+                        `;
+                        openModal(name || '公司详情', content);
+                    });
+                    actionTd.appendChild(btn);
+                    row.appendChild(actionTd);
+                });
+            })();
+            // 公司名称后追加“有收泳装”标签：检测行内包含“泳装”且包含“收/回收/收购/求购/尾货”字样
+            (function () {
+                const rows = document.querySelectorAll('#company-table tbody tr');
+                rows.forEach((row) => {
+                    const text = row.textContent || '';
+                    const hasSwimwear = text.includes('泳装');
+                    const mentionsCollect = /(收|回收|收购|求购|尾货)/.test(text);
+                    if (hasSwimwear && mentionsCollect) {
+                        const nameCell = row.querySelector('.company-name');
+                        if (nameCell && !nameCell.querySelector('.collect-swimwear-tag')) {
+                            const tag = document.createElement('span');
+                            tag.className = 'collect-swimwear-tag';
+                            tag.textContent = '有收泳装';
+                            nameCell.appendChild(tag);
+                        }
+                    }
+                });
+            })();
+        </script>
+    </body>
+</html>
