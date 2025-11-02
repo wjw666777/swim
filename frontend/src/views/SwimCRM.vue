@@ -200,6 +200,8 @@
       <a-space direction="vertical" fill>
         <a-button long type="primary" @click="go('/swim')">泳装 CRM</a-button>
         <a-button long @click="go('/chongfengyi')">冲锋衣 CRM</a-button>
+        <a-button long @click="go('/fabric')">面料 CRM</a-button>
+        <a-button long @click="go('/lalian')">拉链 CRM</a-button>
       </a-space>
     </a-drawer>
   </div>
@@ -207,7 +209,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { companyData } from '../data/fujian_swim.js'
+import { swimData } from '../data/swimCompany.js'
 import { Message } from '@arco-design/web-vue'
 import { fetchCompanies, addCompanyApi, deleteCompanyApi, updateCompanyApi, API_BASE } from '../api/client.js'
 import { useRouter } from 'vue-router'
@@ -232,25 +234,29 @@ onMounted(() => {
   ;(async () => {
     try {
       if (API_BASE) {
-        const serverData = await fetchCompanies()
+        const timeoutMs = 3000
+        const serverData = await Promise.race([
+          fetchCompanies(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs))
+        ])
         if (Array.isArray(serverData) && serverData.length) {
           companies.value = serverData
           localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
         } else {
           const saved = localStorage.getItem(STORAGE_KEY)
-          companies.value = saved ? JSON.parse(saved) : companyData
+          companies.value = saved ? JSON.parse(saved) : swimData
           localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
         }
       } else {
         const saved = localStorage.getItem(STORAGE_KEY)
-        companies.value = saved ? JSON.parse(saved) : companyData
+        companies.value = saved ? JSON.parse(saved) : swimData
         localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
       }
     } catch (e) {
-      // 接口请求失败：强制使用本地 companyData，并提示离线模式
-      companies.value = companyData
+      const saved = localStorage.getItem(STORAGE_KEY)
+      companies.value = saved ? JSON.parse(saved) : swimData
       localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
-      Message.warning('网络异常，已进入离线模式，数据来自本地')
+      Message.warning('接口超时或异常，已使用本地swimCompany.js数据')
     } finally {
       loading.value = false
     }

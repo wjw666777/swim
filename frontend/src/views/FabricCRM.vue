@@ -1,14 +1,15 @@
 <template>
   <div class="page">
     <div class="topbar">
-      <div class="title">冲锋衣 CRM</div>
+      <div class="title">面料 CRM</div>
       <a-button type="text" @click="menuOpen = true">菜单</a-button>
     </div>
+
     <div class="search-bar">
       <div class="search-container">
         <a-input-search
           allow-clear
-          placeholder="搜索企业名称、类型或电话..."
+          placeholder="搜索企业名称、老板或电话..."
           v-model="query"
           @search="onSearch"
           class="search-input"
@@ -20,11 +21,14 @@
           :style="{ width: '160px' }"
         />
         <a-button size="small" @click="clearProvince">清空省份</a-button>
+        <a-button type="primary" @click="showAddModal = true">新增企业</a-button>
       </div>
     </div>
+
     <div class="search-results-info" :class="{ show: query }">
       找到 <span>{{ filteredCompanies.length }}</span> 条匹配结果
     </div>
+
     <div id="loading" v-show="loading" class="loading">正在加载数据...</div>
 
     <div class="content" v-if="!isMobile">
@@ -52,6 +56,7 @@
             <a-space>
               <a-button size="mini" @click="openDetail(record)">详情</a-button>
               <a-button size="mini" status="danger" @click="remove(record)">删除</a-button>
+              <a-button size="mini" @click="startEdit(record)">编辑</a-button>
             </a-space>
           </template>
         </a-table>
@@ -101,8 +106,8 @@
       <template #title>页面切换</template>
       <a-space direction="vertical" fill>
         <a-button long @click="go('/swim')">泳装 CRM</a-button>
-        <a-button long type="primary" @click="go('/chongfengyi')">冲锋衣 CRM</a-button>
-        <a-button long @click="go('/fabric')">面料 CRM</a-button>
+        <a-button long @click="go('/chongfengyi')">冲锋衣 CRM</a-button>
+        <a-button long type="primary" @click="go('/fabric')">面料 CRM</a-button>
         <a-button long @click="go('/lalian')">拉链 CRM</a-button>
       </a-space>
     </a-drawer>
@@ -133,7 +138,7 @@
             <a-descriptions-item label="更多电话">
               <div class="phone-list">
                 <a
-                  v-for="(p, i) in splitPhones(current?.raw?.morePhone || current?.raw?.phones)"
+                  v-for="(p, i) in splitPhones(current?.raw?.morePhone || current?.raw?.phones || '-')"
                   :key="'d-mtel-' + i"
                   class="tel-link"
                   :href="telHref(p)"
@@ -161,7 +166,6 @@
             <a-textarea v-model="detailNotes" :auto-size="{ minRows: 3, maxRows: 6 }" placeholder="请输入回访记录..." />
           </div>
         </div>
-        
       </div>
       <template #footer>
         <a-space>
@@ -170,13 +174,21 @@
         </a-space>
       </template>
     </a-drawer>
-    
 
     <a-modal v-model:visible="editOpen" title="编辑企业" @ok="confirmEdit" @cancel="cancelEdit">
       <a-form :model="editForm" layout="vertical">
         <a-form-item field="name" label="企业名称"><a-input v-model="editForm.name" /></a-form-item>
         <a-form-item field="boss" label="老板名称"><a-input v-model="editForm.boss" /></a-form-item>
         <a-form-item field="phone" label="电话"><a-input v-model="editForm.phone" /></a-form-item>
+      </a-form>
+    </a-modal>
+
+    <a-modal v-model:visible="showAddModal" title="新增企业" @ok="addCompany" @cancel="() => showAddModal=false">
+      <a-form :model="addForm" layout="vertical">
+        <a-form-item field="name" label="企业名称"><a-input v-model="addForm.name" /></a-form-item>
+        <a-form-item field="boss" label="老板名称"><a-input v-model="addForm.boss" /></a-form-item>
+        <a-form-item field="phone" label="电话"><a-input v-model="addForm.phone" /></a-form-item>
+        <a-form-item field="province" label="省份"><a-input v-model="addForm.province" /></a-form-item>
       </a-form>
     </a-modal>
   </div>
@@ -186,7 +198,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useRouter } from 'vue-router'
-import { jacketsData } from '../data/jackets.js'
+import { fabricData } from '../data/fabric.js'
 
 const router = useRouter()
 const menuOpen = ref(false)
@@ -196,15 +208,17 @@ const detailOpen = ref(false)
 const editOpen = ref(false)
 const current = ref(null)
 const editForm = ref({ id: '', name: '', boss: '', phone: '' })
+const showAddModal = ref(false)
+const addForm = ref({ name: '', boss: '', phone: '', province: '' })
 const query = ref('')
 const selectedProvince = ref()
 const isMobile = ref(false)
 const detailStatus = ref('未拜访')
 const detailNotes = ref('')
 
-const VISIT_STATUS_KEY = 'cfy_visit_status'
-const VISIT_LOGS_KEY = 'cfy_visit_logs'
-const visitStatus = ref({}) // { [id]: '未拜访'|'已拜访'|'跟进中' }
+const VISIT_STATUS_KEY = 'fabric_visit_status'
+const VISIT_LOGS_KEY = 'fabric_visit_logs'
+const visitStatus = ref({})
 
 const columns = [
   { title: '企业名称', dataIndex: 'name' },
@@ -237,17 +251,13 @@ const filteredCompanies = computed(() => {
   return list
 })
 function onSearch() {}
-// 多号码拆分与tel链接生成
 function splitPhones(v) {
   return String(v || '')
     .split(/[；;]/)
     .map(s => s.trim())
     .filter(s => !!s && s !== '-' && s !== '—')
 }
-function telHref(p) {
-  return 'tel:' + String(p).replace(/\s+/g, '')
-}
-// 状态标签颜色映射：未拜访(灰)、已拜访(绿)、跟进中(橙)
+function telHref(p) { return 'tel:' + String(p).replace(/\s+/g, '') }
 function statusColor(s) {
   switch (s) {
     case '未拜访': return 'gray'
@@ -256,7 +266,7 @@ function statusColor(s) {
     default: return 'arcoblue'
   }
 }
-// 省份选项：从数据源中的 raw.province 聚合
+
 const provinceOptions = computed(() => {
   const s = new Set()
   let hasEmpty = false
@@ -272,10 +282,18 @@ const provinceOptions = computed(() => {
   return opts
 })
 
-function clearProvince() {
-  selectedProvince.value = undefined
-}
+function clearProvince() { selectedProvince.value = undefined }
 const onResize = () => { isMobile.value = window.innerWidth <= 768 }
+
+// 本地缓存解析与有效性校验
+function parseLocalCompanies() {
+  const saved = localStorage.getItem('fabric_companies')
+  if (!saved) return null
+  try { return JSON.parse(saved) } catch { return null }
+}
+function hasValidCompanies(list) {
+  return Array.isArray(list) && list.length && list.some(c => ((c?.name || '').trim()) || ((c?.raw?.company || c?.raw?.name || '').trim()))
+}
 
 function openDetail(record) {
   current.value = record
@@ -284,73 +302,89 @@ function openDetail(record) {
   detailOpen.value = true
 }
 
-async function saveDetailRecord() {
+function saveDetailRecord() {
   const id = current.value?.id
   if (!id) return
-  // 更新拜访状态并保存本地
-  visitStatus.value[id] = detailStatus.value
-  localStorage.setItem(VISIT_STATUS_KEY, JSON.stringify(visitStatus.value))
-  // 保存回访记录到本地
-  const note = (detailNotes.value || '').trim()
-  if (note) {
-    const rawLogs = localStorage.getItem(VISIT_LOGS_KEY) || '{}'
-    let logsMap
-    try { logsMap = JSON.parse(rawLogs) } catch { logsMap = {} }
-    const arr = Array.isArray(logsMap[id]) ? logsMap[id] : []
-    arr.push({ date: new Date().toISOString(), note })
-    logsMap[id] = arr
-    localStorage.setItem(VISIT_LOGS_KEY, JSON.stringify(logsMap))
+  try {
+    visitStatus.value[id] = detailStatus.value
+    localStorage.setItem(VISIT_STATUS_KEY, JSON.stringify(visitStatus.value))
+    // 保存回访记录本地
+    const logsRaw = localStorage.getItem(VISIT_LOGS_KEY)
+    const logs = logsRaw ? JSON.parse(logsRaw) : {}
+    const arr = Array.isArray(logs[id]) ? logs[id] : []
+    if ((detailNotes.value || '').trim()) {
+      arr.push({ date: new Date().toISOString(), note: detailNotes.value })
+    }
+    logs[id] = arr
+    localStorage.setItem(VISIT_LOGS_KEY, JSON.stringify(logs))
+    Message.success('状态与回访记录已保存到本地')
+  } catch (e) {
+    console.warn('saveDetailRecord failed:', e)
+    Message.warning('状态保存失败')
   }
-  Message.success('已保存（本地存储）')
-  detailOpen.value = false
 }
 
 function startEdit(record) {
-  current.value = record
-  editForm.value = { id: record.id, name: record.name, boss: record.boss, phone: record.phone }
+  editForm.value = { id: record.id, name: record.name || '', boss: record.boss || '', phone: record.phone || '' }
   editOpen.value = true
 }
 
-async function confirmEdit() {
-  // 纯本地更新
-  const idx = companies.value.findIndex(c => c.id === editForm.value.id)
-  if (idx >= 0) companies.value[idx] = { ...companies.value[idx], ...editForm.value }
-  Message.success('已更新（本地）')
-  editOpen.value = false
+function confirmEdit() {
+  const id = editForm.value.id
+  const idx = companies.value.findIndex(c => c.id === id)
+  if (idx >= 0) {
+    const updated = { ...companies.value[idx], ...editForm.value }
+    companies.value[idx] = updated
+    localStorage.setItem('fabric_companies', JSON.stringify(companies.value))
+    editOpen.value = false
+    Message.success('更新成功（本地）')
+  } else {
+    editOpen.value = false
+  }
 }
-
 function cancelEdit() { editOpen.value = false }
 
-async function remove(record) {
-  // 纯本地删除
-  companies.value = companies.value.filter(c => c.id !== record.id)
+function remove(record) {
+  const id = record.id
+  companies.value = companies.value.filter(c => c.id !== id)
+  localStorage.setItem('fabric_companies', JSON.stringify(companies.value))
   Message.success('已删除（本地）')
 }
 
-async function loadData() {
+function addCompany() {
+  const newId = String(Date.now())
+  const raw = { company: addForm.value.name, boss: addForm.value.boss, usefulPhone: addForm.value.phone, province: addForm.value.province }
+  const phone = [raw.usefulPhone].filter(v => !!v && String(v).trim() && String(v).trim() !== '-').join(';')
+  const company = { id: newId, name: raw.company || '', boss: raw.boss || '', phone, raw }
+  companies.value.unshift(company)
+  localStorage.setItem('fabric_companies', JSON.stringify(companies.value))
+  showAddModal.value = false
+  addForm.value = { name: '', boss: '', phone: '', province: '' }
+  Message.success('新增成功（本地）')
+}
+
+onMounted(() => {
+  onResize(); window.addEventListener('resize', onResize)
   loading.value = true
   try {
-    // 仅使用本地JS数据（由 全国冲锋衣.xlsx 生成）
-    companies.value = (jacketsData && jacketsData.length)
-      ? jacketsData.map((r, i) => ({
-          id: r.id || String(i + 1),
-          name: r.company || r.name || r.companyName || '',
-          boss: r.boss || r.owner || r.contact || '',
-          phone: [r.usefulPhone, r.morePhone, r.phone, r.tel]
-            .filter(v => !!v && String(v).trim() && String(v).trim() !== '-')
-            .join(';'),
-          raw: r,
-        }))
-      : []
-    // 恢复拜访状态（本地）
-    try { visitStatus.value = JSON.parse(localStorage.getItem(VISIT_STATUS_KEY) || '{}') } catch { visitStatus.value = {} }
-    localStorage.setItem('chongfengyi_companies', JSON.stringify(companies.value))
+    const savedVisit = localStorage.getItem(VISIT_STATUS_KEY)
+    const savedCompaniesParsed = parseLocalCompanies()
+    if (hasValidCompanies(savedCompaniesParsed)) {
+      companies.value = savedCompaniesParsed
+    } else {
+      companies.value = Array.isArray(fabricData) && fabricData.length
+        ? fabricData.map((r, i) => ({ id: r.id || String(i + 1), name: r.company || r.name || '', boss: r.boss || '', phone: [r.usefulPhone, r.morePhone, r.phone].filter(v => !!v && String(v).trim() && String(v).trim() !== '-').join(';'), raw: r }))
+        : []
+      localStorage.setItem('fabric_companies', JSON.stringify(companies.value))
+    }
+    visitStatus.value = savedVisit ? JSON.parse(savedVisit) : {}
+  } catch (e) {
+    console.warn('Load fabric data failed:', e)
+    companies.value = []
   } finally {
     loading.value = false
   }
-}
-
-onMounted(() => { onResize(); window.addEventListener('resize', onResize); loadData() })
+})
 onUnmounted(() => { window.removeEventListener('resize', onResize) })
 </script>
 
@@ -361,9 +395,7 @@ onUnmounted(() => { window.removeEventListener('resize', onResize) })
 .content { padding: 12px; overflow: auto; flex: 1; }
 .detail { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .raw { background: var(--color-fill-2); padding: 12px; border-radius: 8px; }
-@media (max-width: 640px) {
-  .detail { grid-template-columns: 1fr; }
-}
+@media (max-width: 640px) { .detail { grid-template-columns: 1fr; } }
 
 .search-bar { padding: 12px 16px; background: #f8f9fa; border-bottom: 1px solid #e9ecef; }
 .search-container { display: flex; gap: 12px; align-items: center; }
@@ -371,7 +403,6 @@ onUnmounted(() => { window.removeEventListener('resize', onResize) })
 .cards-container { padding: 0 16px 70px; }
 .card-title { font-size: 16px; font-weight: 600; color: #212529; }
 .card-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; color: #495057; }
-.meta-item { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; color: #495057; }
 .meta-item { display: flex; gap: 6px; align-items: center; }
 .meta-label { font-weight: 600; color: #6c757d; }
 .meta-value { color: #343a40; }
@@ -379,7 +410,9 @@ onUnmounted(() => { window.removeEventListener('resize', onResize) })
 .tel-link:active { opacity: 0.8; }
 .phone-list a + a::before { content: '；'; color: #adb5bd; margin: 0 6px; }
 .card-actions { margin-top: 10px; display: flex; justify-content: flex-end; }
-@media (max-width: 768px) {
-  .detail { grid-template-columns: 1fr; gap: 12px; }
-}
+@media (max-width: 768px) { .detail { grid-template-columns: 1fr; gap: 12px; } }
+
+.loading { padding: 8px 12px; color: #666; }
+.search-results-info { padding: 6px 16px; font-size: 12px; color: #666; display: none; }
+.search-results-info.show { display: block; }
 </style>

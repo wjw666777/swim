@@ -87,28 +87,28 @@ export default {
         const existingData = await env.CHONGFENGYI_KV.get('chongfengyiData')
         let companies = existingData ? JSON.parse(existingData) : []
         const maxId = companies.length > 0 ? Math.max(...companies.map(c => parseInt(c.id) || 0)) : 0
-        newCompany.id = String(maxId + 1)
-        companies.push(newCompany)
+        const id = (parseInt(newCompany?.id) || maxId + 1).toString()
+        const company = { id, ...newCompany }
+        companies.push(company)
         await env.CHONGFENGYI_KV.put('chongfengyiData', JSON.stringify(companies))
-        return new Response(JSON.stringify({ success: true, data: newCompany }), { status: 201, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+        return new Response(JSON.stringify({ success: true, data: company }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
       }
 
       // ---------- Visit Status (后端持久化) ----------
       // 获取拜访状态对象 { [id]: status }
       if (request.method === 'GET' && path === '/api/chongfengyi/visit/status') {
-        const vs = await env.CHONGFENGYI_KV.get('chongfengyiVisitStatus')
-        const body = vs || JSON.stringify({})
-        return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+        const vsRaw = await env.CHONGFENGYI_KV.get('chongfengyiVisitStatus')
+        const vs = vsRaw ? JSON.parse(vsRaw) : {}
+        return new Response(JSON.stringify(vs), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
       }
       // 更新单个企业的拜访状态
       if (request.method === 'PUT' && path === '/api/chongfengyi/visit/status') {
-        const payload = await request.json()
-        const { id, status } = payload || {}
+        const { id, status } = await request.json()
         if (!id) {
           return new Response(JSON.stringify({ error: '缺少企业ID' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
         }
         const vsRaw = await env.CHONGFENGYI_KV.get('chongfengyiVisitStatus')
-        let vs = vsRaw ? JSON.parse(vsRaw) : {}
+        const vs = vsRaw ? JSON.parse(vsRaw) : {}
         vs[String(id)] = status || '未拜访'
         await env.CHONGFENGYI_KV.put('chongfengyiVisitStatus', JSON.stringify(vs))
         return new Response(JSON.stringify({ success: true, data: vs }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
@@ -133,6 +133,115 @@ export default {
         list.unshift({ date: item?.date || new Date().toISOString(), note: item?.note || '' })
         logs[companyId] = list
         await env.CHONGFENGYI_KV.put('chongfengyiVisitLogs', JSON.stringify(logs))
+        return new Response(JSON.stringify({ success: true, data: list }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+      // ---------- Fabric CRUD ----------
+      // 获取面料数据
+      if (request.method === 'GET' && path === '/api/fabric/data') {
+        const data = await env.CRM_KV.get('fabricData')
+        const body = data || JSON.stringify([])
+        return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // 导入/覆盖面料全部数据
+      if (request.method === 'POST' && path === '/api/fabric/data') {
+        const requestData = await request.json()
+        if (!Array.isArray(requestData)) {
+          return new Response(JSON.stringify({ error: '数据格式错误，需要数组格式' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+        }
+        await env.CRM_KV.put('fabricData', JSON.stringify(requestData))
+        return new Response(JSON.stringify({ success: true, message: '面料数据保存成功' }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // 更新单个面料企业
+      if (request.method === 'PUT' && path.startsWith('/api/fabric/company/')) {
+        const companyId = path.split('/').pop()
+        const updateData = await request.json()
+        const existingData = await env.CRM_KV.get('fabricData')
+        let companies = existingData ? JSON.parse(existingData) : []
+        const idx = companies.findIndex(c => String(c.id) === String(companyId))
+        if (idx !== -1) {
+          companies[idx] = { ...companies[idx], ...updateData }
+          await env.CRM_KV.put('fabricData', JSON.stringify(companies))
+          return new Response(JSON.stringify({ success: true, data: companies[idx] }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+        }
+        return new Response(JSON.stringify({ error: '企业不存在' }), { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // 获取单个面料企业
+      if (request.method === 'GET' && path.startsWith('/api/fabric/company/')) {
+        const companyId = path.split('/').pop()
+        const existingData = await env.CRM_KV.get('fabricData')
+        let companies = existingData ? JSON.parse(existingData) : []
+        const company = companies.find(c => String(c.id) === String(companyId))
+        if (company) {
+          return new Response(JSON.stringify(company), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+        }
+        return new Response(JSON.stringify({ error: '企业不存在' }), { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // 删除面料企业
+      if (request.method === 'DELETE' && path.startsWith('/api/fabric/company/')) {
+        const companyId = path.split('/').pop()
+        const existingData = await env.CRM_KV.get('fabricData')
+        let companies = existingData ? JSON.parse(existingData) : []
+        const idx = companies.findIndex(c => String(c.id) === String(companyId))
+        if (idx !== -1) {
+          const deleted = companies.splice(idx, 1)[0]
+          await env.CRM_KV.put('fabricData', JSON.stringify(companies))
+          return new Response(JSON.stringify({ success: true, data: deleted }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+        }
+        return new Response(JSON.stringify({ error: '企业不存在' }), { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // 添加面料企业
+      if (request.method === 'POST' && path === '/api/fabric/company') {
+        const newCompany = await request.json()
+        const existingData = await env.CRM_KV.get('fabricData')
+        let companies = existingData ? JSON.parse(existingData) : []
+        const maxId = companies.length > 0 ? Math.max(...companies.map(c => parseInt(c.id) || 0)) : 0
+        const id = (parseInt(newCompany?.id) || maxId + 1).toString()
+        const company = { id, ...newCompany }
+        companies.push(company)
+        await env.CRM_KV.put('fabricData', JSON.stringify(companies))
+        return new Response(JSON.stringify({ success: true, data: company }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // ---------- Fabric Visit Status ----------
+      if (request.method === 'GET' && path === '/api/fabric/visit/status') {
+        const raw = await env.CRM_KV.get('fabricVisitStatus')
+        const vs = raw ? JSON.parse(raw) : {}
+        return new Response(JSON.stringify(vs), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+      if (request.method === 'PUT' && path === '/api/fabric/visit/status') {
+        const { id, status } = await request.json()
+        if (!id) {
+          return new Response(JSON.stringify({ error: '缺少企业ID' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+        }
+        const raw = await env.CRM_KV.get('fabricVisitStatus')
+        const vs = raw ? JSON.parse(raw) : {}
+        vs[String(id)] = status || '未拜访'
+        await env.CRM_KV.put('fabricVisitStatus', JSON.stringify(vs))
+        return new Response(JSON.stringify({ success: true, data: vs }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+
+      // ---------- Fabric Visit Logs ----------
+      if (request.method === 'GET' && path.startsWith('/api/fabric/visit/logs/')) {
+        const companyId = path.split('/').pop()
+        const logsRaw = await env.CRM_KV.get('fabricVisitLogs')
+        let logs = logsRaw ? JSON.parse(logsRaw) : {}
+        const items = Array.isArray(logs[companyId]) ? logs[companyId] : []
+        return new Response(JSON.stringify(items), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+      }
+      if (request.method === 'POST' && path.startsWith('/api/fabric/visit/logs/')) {
+        const companyId = path.split('/').pop()
+        const item = await request.json()
+        const logsRaw = await env.CRM_KV.get('fabricVisitLogs')
+        let logs = logsRaw ? JSON.parse(logsRaw) : {}
+        const list = Array.isArray(logs[companyId]) ? logs[companyId] : []
+        list.unshift({ date: item?.date || new Date().toISOString(), note: item?.note || '' })
+        logs[companyId] = list
+        await env.CRM_KV.put('fabricVisitLogs', JSON.stringify(logs))
         return new Response(JSON.stringify({ success: true, data: list }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
       }
       // 获取所有CRM数据

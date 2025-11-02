@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "build:jackets": "node scripts/build_jackets_data.js --xlsx ./src/xlsx/jackets.xlsx --out ./src/data/jackets.js",
-    "import:jackets": "node scripts/import_jackets.js --api https://crm-api-worker.939338219.workers.dev"
+    "build:fabric": "node scripts/build_fabric_data.js --xlsx ./src/xlsx/晋江面料公司.xlsx --out ./src/data/fabric.js",
+    "import:jackets": "node scripts/import_jackets.js --api https://crm-api-worker.939338219.workers.dev",
+    "import:fabric": "node scripts/import_fabric.js --api https://crm-api-worker.939338219.workers.dev"
   },
   "dependencies": {
     "@arco-design/web-vue": "^2.57.0",

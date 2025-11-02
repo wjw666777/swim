@@ -131,3 +131,85 @@ export async function addChongfengyiVisitLog(id, log) {
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json()
 }
+
+// -------- Fabric API --------
+export async function fetchFabricCompanies() {
+  const url = buildUrl('/api/fabric/data')
+  if (!url) throw new Error('API base url not set')
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
+
+export async function addFabricCompany(company) {
+  const url = buildUrl('/api/fabric/company')
+  if (!url) throw new Error('API base url not set')
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(company)
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
+
+export async function deleteFabricCompany(id) {
+  const url = buildUrl(`/api/fabric/company/${id}`)
+  if (!url) throw new Error('API base url not set')
+  const res = await fetch(url, { method: 'DELETE', headers: { 'Accept': 'application/json' } })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
+
+export async function updateFabricCompany(id, update) {
+  const url = buildUrl(`/api/fabric/company/${id}`)
+  if (!url) throw new Error('API base url not set')
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(update)
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
+
+// -------- Fabric Visit Status / Logs --------
+export async function fetchFabricVisitStatus() {
+  const url = buildUrl('/api/fabric/visit/status')
+  if (!url) throw new Error('API base url not set')
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
+
+export async function updateFabricVisitStatus(id, status) {
+  const url = buildUrl('/api/fabric/visit/status')
+  if (!url) throw new Error('API base url not set')
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ id, status })
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
+
+export async function fetchFabricVisitLogs(id) {
+  const url = buildUrl(`/api/fabric/visit/logs/${id}`)
+  if (!url) throw new Error('API base url not set')
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
+
+export async function addFabricVisitLog(id, log) {
+  const url = buildUrl(`/api/fabric/visit/logs/${id}`)
+  if (!url) throw new Error('API base url not set')
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(log)
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}

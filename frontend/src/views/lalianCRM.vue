@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <div class="topbar">
-      <div class="title">冲锋衣 CRM</div>
+      <div class="title">拉链公司 CRM</div>
       <a-button type="text" @click="menuOpen = true">菜单</a-button>
     </div>
     <div class="search-bar">
@@ -101,9 +101,9 @@
       <template #title>页面切换</template>
       <a-space direction="vertical" fill>
         <a-button long @click="go('/swim')">泳装 CRM</a-button>
-        <a-button long type="primary" @click="go('/chongfengyi')">冲锋衣 CRM</a-button>
+        <a-button long @click="go('/chongfengyi')">冲锋衣 CRM</a-button>
         <a-button long @click="go('/fabric')">面料 CRM</a-button>
-        <a-button long @click="go('/lalian')">拉链 CRM</a-button>
+        <a-button long type="primary" @click="go('/lalian')">拉链 CRM</a-button>
       </a-space>
     </a-drawer>
 
@@ -142,10 +142,10 @@
               </div>
             </a-descriptions-item>
             <a-descriptions-item label="邮箱">{{ current?.raw?.email || '-' }}</a-descriptions-item>
-            <a-descriptions-item label="公司类型">{{ current?.raw?.companyType || '-' }}</a-descriptions-item>
-            <a-descriptions-item label="人员规模">{{ current?.raw?.people || current?.raw?.insuredCount || '-' }}</a-descriptions-item>
-            <a-descriptions-item label="企业规模">{{ current?.raw?.scale || current?.raw?.companySize || '-' }}</a-descriptions-item>
-            <a-descriptions-item label="公司简介">{{ current?.raw?.profile || current?.raw?.companyIntro || '-' }}</a-descriptions-item>
+            <a-descriptions-item label="公司类型">{{ current?.raw?.公司类型 || current?.raw?.companyType || '-' }}</a-descriptions-item>
+            <a-descriptions-item label="人员规模">{{ current?.raw?.people || current?.raw?.从业人数 || '-' }}</a-descriptions-item>
+            <a-descriptions-item label="企业规模">{{ current?.raw?.scale || current?.raw?.企业规模 || '-' }}</a-descriptions-item>
+            <a-descriptions-item label="公司简介">{{ current?.raw?.profile || '-' }}</a-descriptions-item>
             <a-descriptions-item label="经营范围">{{ current?.raw?.businessScope || '-' }}</a-descriptions-item>
           </a-descriptions>
           <div style="margin-top: 12px">
@@ -161,7 +161,6 @@
             <a-textarea v-model="detailNotes" :auto-size="{ minRows: 3, maxRows: 6 }" placeholder="请输入回访记录..." />
           </div>
         </div>
-        
       </div>
       <template #footer>
         <a-space>
@@ -170,7 +169,6 @@
         </a-space>
       </template>
     </a-drawer>
-    
 
     <a-modal v-model:visible="editOpen" title="编辑企业" @ok="confirmEdit" @cancel="cancelEdit">
       <a-form :model="editForm" layout="vertical">
@@ -186,7 +184,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useRouter } from 'vue-router'
-import { jacketsData } from '../data/jackets.js'
+import { lalianData } from '../data/lalian.js'
 
 const router = useRouter()
 const menuOpen = ref(false)
@@ -202,9 +200,9 @@ const isMobile = ref(false)
 const detailStatus = ref('未拜访')
 const detailNotes = ref('')
 
-const VISIT_STATUS_KEY = 'cfy_visit_status'
-const VISIT_LOGS_KEY = 'cfy_visit_logs'
-const visitStatus = ref({}) // { [id]: '未拜访'|'已拜访'|'跟进中' }
+const VISIT_STATUS_KEY = 'lalian_visit_status'
+const VISIT_LOGS_KEY = 'lalian_visit_logs'
+const visitStatus = ref({})
 
 const columns = [
   { title: '企业名称', dataIndex: 'name' },
@@ -247,7 +245,6 @@ function splitPhones(v) {
 function telHref(p) {
   return 'tel:' + String(p).replace(/\s+/g, '')
 }
-// 状态标签颜色映射：未拜访(灰)、已拜访(绿)、跟进中(橙)
 function statusColor(s) {
   switch (s) {
     case '未拜访': return 'gray'
@@ -256,7 +253,7 @@ function statusColor(s) {
     default: return 'arcoblue'
   }
 }
-// 省份选项：从数据源中的 raw.province 聚合
+
 const provinceOptions = computed(() => {
   const s = new Set()
   let hasEmpty = false
@@ -272,9 +269,7 @@ const provinceOptions = computed(() => {
   return opts
 })
 
-function clearProvince() {
-  selectedProvince.value = undefined
-}
+function clearProvince() { selectedProvince.value = undefined }
 const onResize = () => { isMobile.value = window.innerWidth <= 768 }
 
 function openDetail(record) {
@@ -287,10 +282,8 @@ function openDetail(record) {
 async function saveDetailRecord() {
   const id = current.value?.id
   if (!id) return
-  // 更新拜访状态并保存本地
   visitStatus.value[id] = detailStatus.value
   localStorage.setItem(VISIT_STATUS_KEY, JSON.stringify(visitStatus.value))
-  // 保存回访记录到本地
   const note = (detailNotes.value || '').trim()
   if (note) {
     const rawLogs = localStorage.getItem(VISIT_LOGS_KEY) || '{}'
@@ -312,7 +305,6 @@ function startEdit(record) {
 }
 
 async function confirmEdit() {
-  // 纯本地更新
   const idx = companies.value.findIndex(c => c.id === editForm.value.id)
   if (idx >= 0) companies.value[idx] = { ...companies.value[idx], ...editForm.value }
   Message.success('已更新（本地）')
@@ -322,7 +314,6 @@ async function confirmEdit() {
 function cancelEdit() { editOpen.value = false }
 
 async function remove(record) {
-  // 纯本地删除
   companies.value = companies.value.filter(c => c.id !== record.id)
   Message.success('已删除（本地）')
 }
@@ -330,9 +321,9 @@ async function remove(record) {
 async function loadData() {
   loading.value = true
   try {
-    // 仅使用本地JS数据（由 全国冲锋衣.xlsx 生成）
-    companies.value = (jacketsData && jacketsData.length)
-      ? jacketsData.map((r, i) => ({
+    // 仅使用本地JS数据（由 福建省拉链公司.xlsx 生成）
+    companies.value = (lalianData && lalianData.length)
+      ? lalianData.map((r, i) => ({
           id: r.id || String(i + 1),
           name: r.company || r.name || r.companyName || '',
           boss: r.boss || r.owner || r.contact || '',
@@ -342,9 +333,8 @@ async function loadData() {
           raw: r,
         }))
       : []
-    // 恢复拜访状态（本地）
     try { visitStatus.value = JSON.parse(localStorage.getItem(VISIT_STATUS_KEY) || '{}') } catch { visitStatus.value = {} }
-    localStorage.setItem('chongfengyi_companies', JSON.stringify(companies.value))
+    localStorage.setItem('lalian_companies', JSON.stringify(companies.value))
   } finally {
     loading.value = false
   }
@@ -361,17 +351,13 @@ onUnmounted(() => { window.removeEventListener('resize', onResize) })
 .content { padding: 12px; overflow: auto; flex: 1; }
 .detail { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .raw { background: var(--color-fill-2); padding: 12px; border-radius: 8px; }
-@media (max-width: 640px) {
-  .detail { grid-template-columns: 1fr; }
-}
-
+@media (max-width: 640px) { .detail { grid-template-columns: 1fr; } }
 .search-bar { padding: 12px 16px; background: #f8f9fa; border-bottom: 1px solid #e9ecef; }
 .search-container { display: flex; gap: 12px; align-items: center; }
 .search-input { flex: 1; }
 .cards-container { padding: 0 16px 70px; }
 .card-title { font-size: 16px; font-weight: 600; color: #212529; }
 .card-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; color: #495057; }
-.meta-item { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; color: #495057; }
 .meta-item { display: flex; gap: 6px; align-items: center; }
 .meta-label { font-weight: 600; color: #6c757d; }
 .meta-value { color: #343a40; }
@@ -379,7 +365,5 @@ onUnmounted(() => { window.removeEventListener('resize', onResize) })
 .tel-link:active { opacity: 0.8; }
 .phone-list a + a::before { content: '；'; color: #adb5bd; margin: 0 6px; }
 .card-actions { margin-top: 10px; display: flex; justify-content: flex-end; }
-@media (max-width: 768px) {
-  .detail { grid-template-columns: 1fr; gap: 12px; }
-}
+@media (max-width: 768px) { .detail { grid-template-columns: 1fr; gap: 12px; } }
 </style>

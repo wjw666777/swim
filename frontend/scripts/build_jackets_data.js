@@ -72,8 +72,8 @@ function transformRow(r, idx) {
     city = city || region.city
     district = district || region.district
   }
-  const usefulPhone = firstNonEmpty(r, ['有用电话','对外电话','电话','联系电话'])
-  const morePhone = firstNonEmpty(r, ['更多电话','其它电话','备用电话','手机'])
+  const usefulPhone = firstNonEmpty(r, ['有效电话号码','有效手机号','有效手机','有用电话','对外电话','电话','联系电话'])
+  const morePhone = firstNonEmpty(r, ['更多号码','更多电话','其它电话','备用电话','手机'])
   const emailRaw = firstNonEmpty(r, ['邮箱','电子邮箱','Email','email'])
   const email = emailRaw.replace(/；/g,';').replace(/\s+/g,'')
   const companyType = firstNonEmpty(r, ['公司类型','企业类型','类型'])
