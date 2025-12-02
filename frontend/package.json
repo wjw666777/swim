@@ -9,6 +9,10 @@
     "preview": "vite preview",
     "build:jackets": "node scripts/build_jackets_data.js --xlsx ./src/xlsx/jackets.xlsx --out ./src/data/jackets.js",
     "build:fabric": "node scripts/build_fabric_data.js --xlsx ./src/xlsx/晋江面料公司.xlsx --out ./src/data/fabric.js",
+    "build:shishiClothes": "node scripts/build_shishi_clothes_data.js --xlsx ./src/xlsx/石狮市服装公司.xlsx --out ./src/data/shishiClothes.js",
+    "build:jinjiangClothes": "node scripts/build_jinjiang_clothes_data.js --xlsx ./src/xlsx/晋江服装公司.xlsx --out ./src/data/jinjiangClothes.js",
+    "build:liaoningSwim": "node scripts/build_liaoning_swim_data.js --xlsx ./src/xlsx/辽宁省泳装公司.xlsx --out ./src/data/liaoning_swim.js",
+    "build:zhejiangSwim": "node scripts/build_zhejiang_swim_data.js --xlsx ./src/xlsx/浙江泳装公司.xlsx --out ./src/data/zhejiangswim.js",
     "import:jackets": "node scripts/import_jackets.js --api https://crm-api-worker.939338219.workers.dev",
     "import:fabric": "node scripts/import_fabric.js --api https://crm-api-worker.939338219.workers.dev"
   },
@@ -22,5 +26,5 @@
     "@vitejs/plugin-vue": "^4.5.0",
     "vite": "^5.4.9"
   },
-  "overrides": {}
+  "overrides": { }
 }

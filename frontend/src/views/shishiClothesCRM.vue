@@ -3,7 +3,7 @@
     <div class="header">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <h1>泳装企业CRM系统</h1>
+          <h1>石狮服装企业CRM系统</h1>
           <p>企业客户关系管理平台</p>
         </div>
         <a-button class="menu-btn" shape="round" size="small" @click="menuOpen = true">
@@ -17,9 +17,8 @@
 
     <div class="search-bar">
       <div class="search-container">
-        <a-input-search allow-clear placeholder="搜索企业名称、类型或电话..." v-model="query" @search="onSearch"
+        <a-input-search allow-clear placeholder="搜索企业名称、老板或电话..." v-model="query" @search="onSearch"
           class="search-input" />
-        <a-button type="primary" @click="showAddModal = true">新增企业</a-button>
       </div>
     </div>
 
@@ -34,9 +33,9 @@
         <thead>
           <tr>
             <th>企业名称</th>
-            <th>类型</th>
-            <th>联系人</th>
+            <th>老板</th>
             <th>联系电话</th>
+            <th>地址</th>
             <th>状态</th>
             <th>操作</th>
           </tr>
@@ -44,8 +43,7 @@
         <tbody>
           <tr v-for="(company, i) in filteredCompanies" :key="company.id" @click="openDetail(company)">
             <td data-label="企业名称">{{ company.name }}</td>
-            <td data-label="类型">{{ company.type || '未分类' }}</td>
-            <td data-label="联系人">{{ company.contact || '-' }}</td>
+            <td data-label="老板">{{ company.boss || '-' }}</td>
             <td data-label="联系电话">
               <div class="phone-list" v-if="company.phone">
                 <a v-for="(p, i) in splitPhones(company.phone)" :key="company.id + '-tel-' + i" class="tel-link"
@@ -53,8 +51,9 @@
               </div>
               <template v-else>-</template>
             </td>
-            <td data-label="状态"><span class="status-badge" :class="statusClass(company.status)">{{
-              statusText(company.status) }}</span></td>
+            <td data-label="地址">{{ company.address || '-' }}</td>
+            <td data-label="状态"><span class="status-badge" :class="statusClass(visitStatus[company.id] || 1)">{{
+              statusText(visitStatus[company.id] || 1) }}</span></td>
             <td data-label="操作">
               <button class="btn btn-secondary" @click.stop="openDetail(company)">详情</button>
             </td>
@@ -63,7 +62,6 @@
       </table>
     </div>
 
-    <!-- 移动端卡片列表（Arco）-->
     <div class="cards-container" v-else>
       <a-space direction="vertical" :size="12" style="width: 100%">
         <a-card v-for="(company, i) in filteredCompanies" :key="company.id" hoverable @click="openDetail(company)">
@@ -71,11 +69,12 @@
             <div class="card-title">{{ company.name }}</div>
           </template>
           <template #extra>
-            <a-tag :color="statusTagColor(company.status)">{{ statusText(company.status) }}</a-tag>
+            <a-tag :color="statusTagColor(visitStatus[company.id] || 1)">{{ statusText(visitStatus[company.id] || 1)
+            }}</a-tag>
           </template>
           <div class="card-meta">
-            <div class="meta-item"><span class="meta-label">类型</span><span class="meta-value">{{ company.type || '未分类'
-                }}</span></div>
+            <div class="meta-item"><span class="meta-label">老板</span><span class="meta-value">{{ company.boss || '-'
+            }}</span></div>
             <div class="meta-item">
               <span class="meta-label">电话</span>
               <div class="meta-value phone-list">
@@ -83,8 +82,6 @@
                   :href="telHref(p)" @click.stop>{{ p }}</a>
               </div>
             </div>
-            <div class="meta-item"><span class="meta-label">联系人</span><span class="meta-value">{{ company.contact || '-'
-                }}</span></div>
           </div>
           <div class="card-actions">
             <a-button type="primary" size="small" @click.stop="openDetail(company)">详情</a-button>
@@ -93,16 +90,14 @@
       </a-space>
     </div>
 
-    <!-- 移动端悬浮新增按钮 -->
-    <button class="fab-add" v-if="isMobile" @click="showAddModal = true" aria-label="新增企业">＋</button>
+    <button class="fab-add" v-if="isMobile" @click="menuOpen = true" aria-label="菜单">＋</button>
 
-    <!-- 详细信息抽屉（Arco） -->
     <a-drawer v-model:visible="showDetail" placement="bottom" :height="isMobile ? '85vh' : '70vh'" :footer="false"
       :title="currentCompany?.name || '企业详情'">
       <div class="detail-grid">
         <div class="detail-item">
-          <div class="detail-label">类型</div>
-          <div class="detail-value">{{ currentCompany?.type || '未分类' }}</div>
+          <div class="detail-label">老板</div>
+          <div class="detail-value">{{ currentCompany?.boss || '-' }}</div>
         </div>
         <div class="detail-item">
           <div class="detail-label">电话</div>
@@ -113,16 +108,29 @@
           <div class="detail-value">{{ currentCompany?.address || '-' }}</div>
         </div>
         <div class="detail-item">
-          <div class="detail-label">行业</div>
-          <div class="detail-value">{{ currentCompany?.industry || '-' }}</div>
+          <div class="detail-label">省市区</div>
+          <div class="detail-value">{{ [currentCompany?.raw?.province, currentCompany?.raw?.city,
+          currentCompany?.raw?.district].filter(Boolean).join(' / ') || '-' }}</div>
         </div>
         <div class="detail-item">
-          <div class="detail-label">联系人</div>
-          <div class="detail-value">{{ currentCompany?.contact || '-' }}</div>
+          <div class="detail-label">注册资本</div>
+          <div class="detail-value">{{ currentCompany?.raw?.registerCapital || '-' }}</div>
         </div>
         <div class="detail-item">
-          <div class="detail-label">公司详情</div>
-          <div class="detail-value">{{ currentCompany?.description || '-' }}</div>
+          <div class="detail-label">企业规模</div>
+          <div class="detail-value">{{ currentCompany?.raw?.scale || '-' }}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">参保人数</div>
+          <div class="detail-value">{{ currentCompany?.raw?.people || '-' }}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">公司简介</div>
+          <div class="detail-value">{{ currentCompany?.raw?.profile || '-' }}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">经营范围</div>
+          <div class="detail-value">{{ currentCompany?.raw?.businessScope || '-' }}</div>
         </div>
       </div>
       <a-space direction="vertical" :size="12" style="width: 100%">
@@ -147,59 +155,21 @@
       </a-space>
     </a-drawer>
 
-    <!-- 新增企业抽屉（Arco） -->
-    <a-drawer v-model:visible="showAddModal" placement="bottom" :height="isMobile ? '85vh' : '70vh'" title="新增企业"
-      :footer="false">
-      <a-form layout="vertical" :model="addForm">
-        <a-form-item field="name" label="企业名称 *">
-          <a-input v-model="addForm.name" allow-clear placeholder="请输入企业名称" />
-        </a-form-item>
-        <a-form-item field="type" label="类型 *">
-          <a-select v-model="addForm.type" placeholder="请选择类型">
-            <a-option value="成衣">成衣</a-option>
-            <a-option value="面料">面料</a-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item field="contact" label="联系人">
-          <a-input v-model="addForm.contact" allow-clear placeholder="可选" />
-        </a-form-item>
-        <a-form-item field="phone" label="联系电话 *">
-          <a-input v-model="addForm.phone" allow-clear placeholder="请输入联系电话" />
-        </a-form-item>
-        <a-form-item field="address" label="地址">
-          <a-input v-model="addForm.address" allow-clear placeholder="可选" />
-        </a-form-item>
-        <a-form-item field="industry" label="行业">
-          <a-input v-model="addForm.industry" allow-clear placeholder="可选" />
-        </a-form-item>
-        <a-form-item field="scale" label="企业规模">
-          <a-input v-model="addForm.scale" allow-clear placeholder="可选" />
-        </a-form-item>
-        <a-form-item field="description" label="公司详情">
-          <a-textarea v-model="addForm.description" :auto-size="{ minRows: 2, maxRows: 6 }" placeholder="可选" />
-        </a-form-item>
-        <div style="text-align: right">
-          <a-button @click="showAddModal = false">取消</a-button>
-          <a-button type="primary" style="margin-left: 8px" @click="addCompany">新增</a-button>
-        </div>
-      </a-form>
-    </a-drawer>
-
-    <!-- 页面切换抽屉 -->
-    <MenuDrawer v-model:visible="menuOpen" current="swim" />
+    <MenuDrawer v-model:visible="menuOpen" current="shishi" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { swimData } from '../data/swimCompany.js'
 import { Message } from '@arco-design/web-vue'
-import { fetchCompanies, addCompanyApi, deleteCompanyApi, updateCompanyApi, API_BASE } from '../api/client.js'
 import { useRouter } from 'vue-router'
 import { IconMenu } from '@arco-design/web-vue/es/icon'
+import { shishiClothesData } from '../data/shishiClothes.js'
 import MenuDrawer from '../components/MenuDrawer.vue'
 
-const STORAGE_KEY = 'companiesData'
+const STORAGE_KEY = 'shishi_clothes_companies'
+const STATUS_KEY = 'shishi_clothes_status'
+const NOTES_KEY = 'shishi_clothes_notes'
 const loading = ref(false)
 const query = ref('')
 const companies = ref([])
@@ -210,165 +180,90 @@ const onResize = () => { isMobile.value = window.innerWidth <= 768 }
 
 function go(path) { router.push(path); menuOpen.value = false }
 
-// 初始化数据：localStorage优先
 onMounted(() => {
   loading.value = true
   onResize()
   window.addEventListener('resize', onResize)
-    ; (async () => {
-      try {
-        if (API_BASE) {
-          const timeoutMs = 3000
-          const serverData = await Promise.race([
-            fetchCompanies(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs))
-          ])
-          if (Array.isArray(serverData) && serverData.length) {
-            companies.value = serverData
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
-          } else {
-            const saved = localStorage.getItem(STORAGE_KEY)
-            companies.value = saved ? JSON.parse(saved) : swimData
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
-          }
-        } else {
-          const saved = localStorage.getItem(STORAGE_KEY)
-          companies.value = saved ? JSON.parse(saved) : swimData
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
-        }
-      } catch (e) {
-        const saved = localStorage.getItem(STORAGE_KEY)
-        companies.value = saved ? JSON.parse(saved) : swimData
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
-        Message.warning('接口超时或异常，已使用本地swimCompany.js数据')
-      } finally {
-        loading.value = false
-      }
-    })()
+  try {
+    companies.value = (shishiClothesData && shishiClothesData.length)
+      ? shishiClothesData.map((r, i) => ({
+        id: String(i + 1),
+        name: r.company || '',
+        boss: r.boss || '',
+        address: r.address || '',
+        phone: [r.usefulPhone, r.morePhone].filter(v => !!v && String(v).trim() && String(v).trim() !== '-').join(';'),
+        raw: r,
+      }))
+      : []
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (!saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
+    try { visitStatus.value = JSON.parse(localStorage.getItem(STATUS_KEY) || '{}') } catch { visitStatus.value = {} }
+  } finally {
+    loading.value = false
+  }
 })
-onUnmounted(() => {
-  window.removeEventListener('resize', onResize)
-})
+onUnmounted(() => { window.removeEventListener('resize', onResize) })
 
 const filteredCompanies = computed(() => {
-  if (!query.value) return companies.value
-  const q = query.value.toLowerCase()
+  const q = (query.value || '').toLowerCase()
+  if (!q) return companies.value
   return companies.value.filter(c =>
     (c.name || '').toLowerCase().includes(q) ||
-    (c.type || '').toLowerCase().includes(q) ||
+    (c.boss || '').toLowerCase().includes(q) ||
     (c.phone || '').toLowerCase().includes(q)
   )
 })
 
 function onSearch() { }
-function clearSearch() { query.value = '' }
-
-// 多号码拆分与tel链接生成
 function splitPhones(v) {
   return String(v || '')
     .split(/[；;]/)
     .map(s => s.trim())
-    .filter(Boolean)
+    .filter(s => !!s && s !== '-' && s !== '—')
 }
-function telHref(p) {
-  return 'tel:' + String(p).replace(/\s+/g, '')
-}
+function telHref(p) { return 'tel:' + String(p).replace(/\s+/g, '') }
 
 function statusText(s) {
   return { 1: '未拜访', 2: '已拜访', 3: '已拒绝', 4: '已合作', 5: '已签单' }[s] || '未知'
 }
 function statusClass(s) {
-  return {
-    1: 'status-unvisited',
-    2: 'status-visited',
-    3: 'status-rejected',
-    4: 'status-cooperating',
-    5: 'status-signed'
-  }[s] || 'status-unvisited'
+  return { 1: 'status-unvisited', 2: 'status-visited', 3: 'status-rejected', 4: 'status-cooperating', 5: 'status-signed' }[s] || 'status-unvisited'
 }
-
-// Arco Tag 颜色映射
 function statusTagColor(s) {
-  return {
-    1: 'gold',
-    2: 'arcoblue',
-    3: 'red',
-    4: 'green',
-    5: 'purple'
-  }[s] || 'gold'
+  return { 1: 'gold', 2: 'arcoblue', 3: 'red', 4: 'green', 5: 'purple' }[s] || 'gold'
 }
 
-// 详情与编辑
 const showDetail = ref(false)
 const currentCompany = ref(null)
 const editStatus = ref(1)
 const editNotes = ref('')
+const visitStatus = ref({})
 
 function openDetail(c) {
   currentCompany.value = { ...c }
-  editStatus.value = c.status || 1
-  editNotes.value = c.visitRecord || ''
+  editStatus.value = visitStatus.value[c.id] || 1
+  editNotes.value = ''
   showDetail.value = true
 }
 
 async function saveRecord() {
-  const idx = companies.value.findIndex(c => c.id === currentCompany.value?.id)
-  if (idx >= 0) {
-    companies.value[idx].status = editStatus.value
-    companies.value[idx].visitRecord = editNotes.value
+  const id = currentCompany.value?.id
+  if (!id) return
+  visitStatus.value[id] = editStatus.value
+  localStorage.setItem(STATUS_KEY, JSON.stringify(visitStatus.value))
+  const note = (editNotes.value || '').trim()
+  if (note) {
+    let logs
+    try { logs = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}') } catch { logs = {} }
+    const arr = Array.isArray(logs[id]) ? logs[id] : []
+    arr.push({ date: new Date().toISOString(), note })
+    logs[id] = arr
+    localStorage.setItem(NOTES_KEY, JSON.stringify(logs))
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
+  Message.success('已保存（本地存储）')
   showDetail.value = false
 }
 function closeDetail() { showDetail.value = false }
-
-async function addCompany() {
-  const newItem = {
-    id: String(Date.now()),
-    name: (query.value || '').trim() || '未命名',
-    type: '成衣',
-    contact: addForm.value.contact || '',
-    phone: '',
-    address: '',
-    industry: '泳装相关',
-    description: addForm.value.description || '',
-    status: 1
-  }
-    ; (async () => {
-      try {
-        if (API_BASE) {
-          const resp = await addCompanyApi(newItem)
-          if (resp && resp.data) {
-            companies.value.unshift(resp.data)
-          } else {
-            companies.value.unshift(newItem)
-          }
-        } else {
-          companies.value.unshift(newItem)
-        }
-      } catch (e) {
-        companies.value.unshift(newItem)
-      } finally {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
-        showAddModal.value = false
-        addForm.value = { name: '', type: '成衣', phone: '', address: '', industry: '泳装相关', scale: '' }
-      }
-    })()
-}
-
-// 可选：删除企业示例（UI未挂按钮，仅保留函数供扩展）
-async function deleteCompany(id) {
-  const idx = companies.value.findIndex(c => c.id === id)
-  if (idx < 0) return
-  try {
-    if (API_BASE) await deleteCompanyApi(id)
-  } catch (e) { }
-  companies.value.splice(idx, 1)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(companies.value))
-}
-
-const showAddModal = ref(false)
-const addForm = ref({ name: '', type: '成衣', contact: '', phone: '', address: '', industry: '泳装相关', scale: '', description: '' })
 </script>
 
 <style scoped>
@@ -503,7 +398,6 @@ body {
   color: white;
 }
 
-/* 旧模态样式移除，改用 Arco Drawer */
 .detail-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -565,7 +459,6 @@ body {
   color: #666;
 }
 
-/* 移动端适配（卡片视图 + 全屏模态 + 悬浮新增）*/
 @media (max-width: 768px) {
   .container {
     max-width: none;
@@ -611,12 +504,10 @@ body {
     padding: 0 16px;
   }
 
-  /* 卡片列表 */
   .cards-container {
     padding: 0 16px 70px;
   }
 
-  /* 使用 Arco Card，移除旧卡片容器样式 */
   .card-title {
     font-size: 16px;
     font-weight: 600;
@@ -667,12 +558,10 @@ body {
     justify-content: flex-end;
   }
 
-  /* 移动端按钮使用 Arco Button 默认样式 */
   .status-badge {
     min-width: auto;
   }
 
-  /* 悬浮新增按钮 */
   .fab-add {
     position: fixed;
     right: 16px;
@@ -689,7 +578,6 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   }
 
-  /* Drawer 内容滚动优化 */
   :deep(.arco-drawer-body) {
     -webkit-overflow-scrolling: touch;
   }

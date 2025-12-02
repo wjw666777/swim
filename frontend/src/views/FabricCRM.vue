@@ -7,19 +7,10 @@
 
     <div class="search-bar">
       <div class="search-container">
-        <a-input-search
-          allow-clear
-          placeholder="搜索企业名称、老板或电话..."
-          v-model="query"
-          @search="onSearch"
-          class="search-input"
-        />
-        <a-select
-          v-model="selectedProvince"
-          :options="provinceOptions"
-          placeholder="选择省份"
-          :style="{ width: '160px' }"
-        />
+        <a-input-search allow-clear placeholder="搜索企业名称、老板或电话..." v-model="query" @search="onSearch"
+          class="search-input" />
+        <a-select v-model="selectedProvince" :options="provinceOptions" placeholder="选择省份"
+          :style="{ width: '160px' }" />
         <a-button size="small" @click="clearProvince">清空省份</a-button>
         <a-button type="primary" @click="showAddModal = true">新增企业</a-button>
       </div>
@@ -43,13 +34,8 @@
           </template>
           <template #phone="{ record }">
             <div class="phone-list">
-              <a
-                v-for="(p, i) in splitPhones(record.phone)"
-                :key="record.id + '-tel-' + i"
-                class="tel-link"
-                :href="telHref(p)"
-                @click.stop
-              >{{ p }}</a>
+              <a v-for="(p, i) in splitPhones(record.phone)" :key="record.id + '-tel-' + i" class="tel-link"
+                :href="telHref(p)" @click.stop>{{ p }}</a>
             </div>
           </template>
           <template #actions="{ record }">
@@ -66,12 +52,7 @@
     <!-- 移动端卡片列表 -->
     <div class="cards-container" v-else>
       <a-space direction="vertical" :size="12" style="width: 100%">
-        <a-card
-          v-for="(company, i) in filteredCompanies"
-          :key="company.id"
-          hoverable
-          @click="openDetail(company)"
-        >
+        <a-card v-for="(company, i) in filteredCompanies" :key="company.id" hoverable @click="openDetail(company)">
           <template #title>
             <div class="card-title">{{ company.name }}</div>
           </template>
@@ -84,16 +65,12 @@
             <div class="meta-item">
               <span class="meta-label">电话</span>
               <div class="meta-value phone-list">
-                <a
-                  v-for="(p, i) in splitPhones(company.phone)"
-                  :key="company.id + '-mtel-' + i"
-                  class="tel-link"
-                  :href="telHref(p)"
-                  @click.stop
-                >{{ p }}</a>
+                <a v-for="(p, i) in splitPhones(company.phone)" :key="company.id + '-mtel-' + i" class="tel-link"
+                  :href="telHref(p)" @click.stop>{{ p }}</a>
               </div>
             </div>
-            <div class="meta-item"><span class="meta-label">老板</span><span class="meta-value">{{ company.boss || '-' }}</span></div>
+            <div class="meta-item"><span class="meta-label">老板</span><span class="meta-value">{{ company.boss || '-'
+                }}</span></div>
           </div>
           <div class="card-actions">
             <a-button type="primary" size="small" @click.stop="openDetail(company)">详情</a-button>
@@ -102,55 +79,43 @@
       </a-space>
     </div>
 
-    <a-drawer v-model:visible="menuOpen" placement="right" width="240" :footer="false">
-      <template #title>页面切换</template>
-      <a-space direction="vertical" fill>
-        <a-button long @click="go('/swim')">泳装 CRM</a-button>
-        <a-button long @click="go('/chongfengyi')">冲锋衣 CRM</a-button>
-        <a-button long type="primary" @click="go('/fabric')">面料 CRM</a-button>
-        <a-button long @click="go('/lalian')">拉链 CRM</a-button>
-      </a-space>
-    </a-drawer>
+    <MenuDrawer v-model:visible="menuOpen" current="fabric" />
 
     <a-drawer v-model:visible="detailOpen" placement="bottom" :height="isMobile ? '85vh' : '70vh'">
       <template #title>{{ current?.name || '详情' }}</template>
       <div class="detail">
         <div>
           <a-descriptions :column="1" bordered size="small">
-            <a-descriptions-item label="企业名称">{{ current?.raw?.company || current?.raw?.companyName || current?.name }}</a-descriptions-item>
-            <a-descriptions-item label="登记状态">{{ current?.raw?.registerStatus || current?.raw?.registrationStatus || '-' }}</a-descriptions-item>
+            <a-descriptions-item label="企业名称">{{ current?.raw?.company || current?.raw?.companyName || current?.name
+              }}</a-descriptions-item>
+            <a-descriptions-item label="登记状态">{{ current?.raw?.registerStatus || current?.raw?.registrationStatus || '-'
+              }}</a-descriptions-item>
             <a-descriptions-item label="老板名称">{{ current?.raw?.boss || current?.boss }}</a-descriptions-item>
             <a-descriptions-item label="注册资本">{{ current?.raw?.registerCapital || '-' }}</a-descriptions-item>
             <a-descriptions-item label="成立日期">{{ current?.raw?.createTime || '-' }}</a-descriptions-item>
             <a-descriptions-item label="地址">{{ current?.raw?.address || '-' }}</a-descriptions-item>
-            <a-descriptions-item label="省市区">{{ [current?.raw?.province, current?.raw?.city, current?.raw?.district].filter(Boolean).join(' / ') }}</a-descriptions-item>
+            <a-descriptions-item label="省市区">{{ [current?.raw?.province, current?.raw?.city,
+            current?.raw?.district].filter(Boolean).join(' / ') }}</a-descriptions-item>
             <a-descriptions-item label="电话">
               <div class="phone-list">
-                <a
-                  v-for="(p, i) in splitPhones(current?.raw?.usefulPhone || current?.raw?.mobile || current?.phone)"
-                  :key="'d-tel-' + i"
-                  class="tel-link"
-                  :href="telHref(p)"
-                  @click.stop
-                >{{ p }}</a>
+                <a v-for="(p, i) in splitPhones(current?.raw?.usefulPhone || current?.raw?.mobile || current?.phone)"
+                  :key="'d-tel-' + i" class="tel-link" :href="telHref(p)" @click.stop>{{ p }}</a>
               </div>
             </a-descriptions-item>
             <a-descriptions-item label="更多电话">
               <div class="phone-list">
-                <a
-                  v-for="(p, i) in splitPhones(current?.raw?.morePhone || current?.raw?.phones || '-')"
-                  :key="'d-mtel-' + i"
-                  class="tel-link"
-                  :href="telHref(p)"
-                  @click.stop
-                >{{ p }}</a>
+                <a v-for="(p, i) in splitPhones(current?.raw?.morePhone || current?.raw?.phones || '-')"
+                  :key="'d-mtel-' + i" class="tel-link" :href="telHref(p)" @click.stop>{{ p }}</a>
               </div>
             </a-descriptions-item>
             <a-descriptions-item label="邮箱">{{ current?.raw?.email || '-' }}</a-descriptions-item>
             <a-descriptions-item label="公司类型">{{ current?.raw?.companyType || '-' }}</a-descriptions-item>
-            <a-descriptions-item label="人员规模">{{ current?.raw?.people || current?.raw?.insuredCount || '-' }}</a-descriptions-item>
-            <a-descriptions-item label="企业规模">{{ current?.raw?.scale || current?.raw?.companySize || '-' }}</a-descriptions-item>
-            <a-descriptions-item label="公司简介">{{ current?.raw?.profile || current?.raw?.companyIntro || '-' }}</a-descriptions-item>
+            <a-descriptions-item label="人员规模">{{ current?.raw?.people || current?.raw?.insuredCount || '-'
+              }}</a-descriptions-item>
+            <a-descriptions-item label="企业规模">{{ current?.raw?.scale || current?.raw?.companySize || '-'
+              }}</a-descriptions-item>
+            <a-descriptions-item label="公司简介">{{ current?.raw?.profile || current?.raw?.companyIntro || '-'
+              }}</a-descriptions-item>
             <a-descriptions-item label="经营范围">{{ current?.raw?.businessScope || '-' }}</a-descriptions-item>
           </a-descriptions>
           <div style="margin-top: 12px">
@@ -169,7 +134,7 @@
       </div>
       <template #footer>
         <a-space>
-          <a-button @click="detailOpen=false">取消</a-button>
+          <a-button @click="detailOpen = false">取消</a-button>
           <a-button type="primary" @click="saveDetailRecord">保存</a-button>
         </a-space>
       </template>
@@ -183,7 +148,7 @@
       </a-form>
     </a-modal>
 
-    <a-modal v-model:visible="showAddModal" title="新增企业" @ok="addCompany" @cancel="() => showAddModal=false">
+    <a-modal v-model:visible="showAddModal" title="新增企业" @ok="addCompany" @cancel="() => showAddModal = false">
       <a-form :model="addForm" layout="vertical">
         <a-form-item field="name" label="企业名称"><a-input v-model="addForm.name" /></a-form-item>
         <a-form-item field="boss" label="老板名称"><a-input v-model="addForm.boss" /></a-form-item>
@@ -199,6 +164,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useRouter } from 'vue-router'
 import { fabricData } from '../data/fabric.js'
+import MenuDrawer from '../components/MenuDrawer.vue'
 
 const router = useRouter()
 const menuOpen = ref(false)
@@ -250,7 +216,7 @@ const filteredCompanies = computed(() => {
   }
   return list
 })
-function onSearch() {}
+function onSearch() { }
 function splitPhones(v) {
   return String(v || '')
     .split(/[；;]/)
@@ -389,30 +355,138 @@ onUnmounted(() => { window.removeEventListener('resize', onResize) })
 </script>
 
 <style scoped>
-.page { display: flex; flex-direction: column; height: 100vh; }
-.topbar { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--color-border-2); }
-.title { font-weight: 600; }
-.content { padding: 12px; overflow: auto; flex: 1; }
-.detail { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.raw { background: var(--color-fill-2); padding: 12px; border-radius: 8px; }
-@media (max-width: 640px) { .detail { grid-template-columns: 1fr; } }
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
 
-.search-bar { padding: 12px 16px; background: #f8f9fa; border-bottom: 1px solid #e9ecef; }
-.search-container { display: flex; gap: 12px; align-items: center; }
-.search-input { flex: 1; }
-.cards-container { padding: 0 16px 70px; }
-.card-title { font-size: 16px; font-weight: 600; color: #212529; }
-.card-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; color: #495057; }
-.meta-item { display: flex; gap: 6px; align-items: center; }
-.meta-label { font-weight: 600; color: #6c757d; }
-.meta-value { color: #343a40; }
-.tel-link { color: #0d6efd; text-decoration: none; }
-.tel-link:active { opacity: 0.8; }
-.phone-list a + a::before { content: '；'; color: #adb5bd; margin: 0 6px; }
-.card-actions { margin-top: 10px; display: flex; justify-content: flex-end; }
-@media (max-width: 768px) { .detail { grid-template-columns: 1fr; gap: 12px; } }
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid var(--color-border-2);
+}
 
-.loading { padding: 8px 12px; color: #666; }
-.search-results-info { padding: 6px 16px; font-size: 12px; color: #666; display: none; }
-.search-results-info.show { display: block; }
+.title {
+  font-weight: 600;
+}
+
+.content {
+  padding: 12px;
+  overflow: auto;
+  flex: 1;
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.raw {
+  background: var(--color-fill-2);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+  .detail {
+    grid-template-columns: 1fr;
+  }
+}
+
+.search-bar {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.search-container {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+}
+
+.cards-container {
+  padding: 0 16px 70px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.card-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  color: #495057;
+}
+
+.meta-item {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.meta-label {
+  font-weight: 600;
+  color: #6c757d;
+}
+
+.meta-value {
+  color: #343a40;
+}
+
+.tel-link {
+  color: #0d6efd;
+  text-decoration: none;
+}
+
+.tel-link:active {
+  opacity: 0.8;
+}
+
+.phone-list a+a::before {
+  content: '；';
+  color: #adb5bd;
+  margin: 0 6px;
+}
+
+.card-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .detail {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.loading {
+  padding: 8px 12px;
+  color: #666;
+}
+
+.search-results-info {
+  padding: 6px 16px;
+  font-size: 12px;
+  color: #666;
+  display: none;
+}
+
+.search-results-info.show {
+  display: block;
+}
 </style>
