@@ -7,6 +7,7 @@ import WholesaleCRM from './views/wholesaleCRM.vue';
 import ShishiClothesCRM from './views/shishiClothesCRM.vue';
 import LiaoningSwimCRM from './views/liaoningSwimCRM.vue';
 import ZhejiangSwimCRM from './views/zhejiangSwimCRM.vue';
+import NananClothesCRM from './views/nananClothesCRM.vue';
 import JinjiangClothesCRM from './views/jinjiangClothesCRM.vue';
 
 const routes = [
@@ -15,6 +16,7 @@ const routes = [
     { path: '/shishi', name: 'shishi', component: ShishiClothesCRM },
     { path: '/liaoning', name: 'liaoning', component: LiaoningSwimCRM },
     { path: '/zhejiang', name: 'zhejiang', component: ZhejiangSwimCRM },
+    { path: '/nanan', name: 'nanan', component: NananClothesCRM },
     { path: '/jinjiang', name: 'jinjiang', component: JinjiangClothesCRM },
     { path: '/chongfengyi', name: 'chongfengyi', component: ChongfengyiCRM },
     { path: '/fabric', name: 'fabric', component: FabricCRM },

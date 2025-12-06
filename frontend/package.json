@@ -13,6 +13,7 @@
     "build:jinjiangClothes": "node scripts/build_jinjiang_clothes_data.js --xlsx ./src/xlsx/晋江服装公司.xlsx --out ./src/data/jinjiangClothes.js",
     "build:liaoningSwim": "node scripts/build_liaoning_swim_data.js --xlsx ./src/xlsx/辽宁省泳装公司.xlsx --out ./src/data/liaoning_swim.js",
     "build:zhejiangSwim": "node scripts/build_zhejiang_swim_data.js --xlsx ./src/xlsx/浙江泳装公司.xlsx --out ./src/data/zhejiangswim.js",
+    "build:nananClothes": "node scripts/build_nanan_clothes_data.js --xlsx ./src/xlsx/南安市服装工厂.xlsx --out ./src/data/nananClothes.js",
     "import:jackets": "node scripts/import_jackets.js --api https://crm-api-worker.939338219.workers.dev",
     "import:fabric": "node scripts/import_fabric.js --api https://crm-api-worker.939338219.workers.dev"
   },
